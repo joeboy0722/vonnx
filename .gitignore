@@ -1,0 +1,37 @@
+# Python / Build Artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dll
+*.lib
+*.exp
+*.obj
+*.egg-info/
+dist/
+build/
+build_tmp/
+.eggs/
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# IDE / Editor
+.vs/
+.vscode/
+.idea/
+*.sln
+*.vcxproj
+
+# Large Model / Asset Files (User generated)
+*.pt
+*.onnx
+bus.jpg
+yolov8n.onnx
+yolov8s.onnx
+yolov8m.onnx
+yolov8l.onnx
+yolov8x.onnx
