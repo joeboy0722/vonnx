@@ -26,7 +26,17 @@ env/
 *.sln
 *.vcxproj
 
-# Large Model / Asset Files (User generated)
+# Datasets & Local Evaluation / Benchmark Outputs
+data/
+datasets/
+runs/
+COCO128_ULTIMATE_BENCHMARK_REPORT*.md
+examples/eval_coco128_dataset.py
+examples/verify_coco_accuracy.py
+examples/ultimate_showdown.py
+examples/generate_ultimate_coco128_report.py
+
+# Large Model & Test Asset Files (User generated)
 *.pt
 *.onnx
 bus.jpg
@@ -35,3 +45,8 @@ yolov8s.onnx
 yolov8m.onnx
 yolov8l.onnx
 yolov8x.onnx
+yolov8n.pt
+yolov8s.pt
+yolov8m.pt
+yolov8l.pt
+yolov8x.pt
