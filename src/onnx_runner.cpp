@@ -1,4 +1,10 @@
 #include "vonnx/onnx_runner.hpp"
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace vonnx {
 
@@ -13,7 +19,13 @@ ONNXRunner::ONNXRunner(const std::string& model_path, int use_gpu_id) {
 
     // 實體化 ONNX Session
 #ifdef _WIN32
-    std::wstring w_model_path(model_path.begin(), model_path.end());
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, model_path.c_str(), (int)model_path.size(), NULL, 0);
+    std::wstring w_model_path(size_needed, 0);
+    if (size_needed > 0) {
+        MultiByteToWideChar(CP_UTF8, 0, model_path.c_str(), (int)model_path.size(), &w_model_path[0], size_needed);
+    } else {
+        w_model_path = std::wstring(model_path.begin(), model_path.end());
+    }
     session_ = std::make_unique<Ort::Session>(env_, w_model_path.c_str(), session_options_);
 #else
     session_ = std::make_unique<Ort::Session>(env_, model_path.c_str(), session_options_);

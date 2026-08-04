@@ -26,10 +26,12 @@ env/
 *.sln
 *.vcxproj
 
-# Datasets & Local Evaluation / Benchmark Outputs
+# Datasets & Local Evaluation / Standalone SDK Outputs (Private)
 data/
 datasets/
 runs/
+vonnx_standalone_sdk/
+build_standalone_dll.py
 COCO128_ULTIMATE_BENCHMARK_REPORT*.md
 examples/eval_coco128_dataset.py
 examples/verify_coco_accuracy.py

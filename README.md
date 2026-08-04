@@ -118,6 +118,24 @@ python examples/benchmark_4k_stress.py
 
 ---
 
+## 📦 獨立 C/C++ DLL 導出與純 ctypes 呼叫 (Building Standalone DLL)
+
+除了 Python PyBind11 介面外，`vONNX Engine` 提供了純 C API 導出介面 [include/vonnx_c_api.h](file:///d:/YOLO碎片架構/include/vonnx_c_api.h)。您可以將其編譯為獨立的 `vonnx.dll`，供 **C++、C# (.NET)、Go、Rust** 或 **純 Python `ctypes`** (零外掛套件依賴) 直接載入呼叫。
+
+### 1. 純 C API 介面
+- `vonnx_create_engine()`：建立 GPU 推論引擎控制代碼。
+- `vonnx_predict()`：傳入影像指標 (支持 RGB24 / BGR24 / NV12)，取得目標邊界框。
+- `vonnx_destroy_engine()`：釋放引擎資源。
+
+### 2. 本地自建 DLL 步驟
+若您希望自建獨立 `vonnx.dll` 與封裝 SDK：
+```powershell
+python build_standalone_dll.py
+```
+執行後將於 `vonnx_standalone_sdk/` 目錄下自動生成 `vonnx.dll`、標頭檔以及純 `ctypes` 測試腳本 `test_ctypes.py`。
+
+---
+
 ## ⚖️ 授權條款 (License)
 
 本專案採用 **[MIT License](LICENSE)** 開源授權，您可以自由商業化、修改與分發。
