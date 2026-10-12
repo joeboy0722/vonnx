@@ -1,46 +1,32 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.24)
 project(vonnx LANGUAGES CXX CUDA)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_STANDARD 17)
-set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
-# NVCC 編譯選項
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -O3 --use_fast_math -Xcompiler=/wd4819")
-
-# 引入標頭檔路徑
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-# 搜尋 ONNX Runtime
-if(DEFINED ONNXRUNTIME_ROOT_DIR)
-    include_directories(${ONNXRUNTIME_ROOT_DIR}/include)
-    link_directories(${ONNXRUNTIME_ROOT_DIR}/lib)
+find_package(CUDAToolkit REQUIRED)
+find_path(ORT_INCLUDE onnxruntime_cxx_api.h HINTS "${ONNXRUNTIME_ROOT_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/include/onnxruntime")
+find_library(ORT_LIBRARY NAMES onnxruntime HINTS "${ONNXRUNTIME_ROOT_DIR}/lib" "${ONNXRUNTIME_ROOT_DIR}" REQUIRED)
+set(CORE src/paged_tensor_pool.cu src/cuda_preprocess.cu src/cuda_nms.cu src/onnx_runner.cpp src/continuous_scheduler.cpp src/vonnx_engine.cpp)
+add_library(vonnx_static STATIC ${CORE})
+set_target_properties(vonnx_static PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(vonnx_static PUBLIC include "${ORT_INCLUDE}")
+target_link_libraries(vonnx_static PUBLIC CUDA::cudart "${ORT_LIBRARY}")
+target_compile_options(vonnx_static PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--fmad=false>)
+if(MSVC)
+ target_compile_options(vonnx_static PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/utf-8> $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/utf-8>)
 endif()
-
-# 核心原始碼檔案
-set(VONNX_SOURCES
-    src/paged_tensor_pool.cu
-    src/cuda_preprocess.cu
-    src/cuda_nms.cu
-    src/onnx_runner.cpp
-    src/continuous_scheduler.cpp
-    src/vonnx_engine.cpp
-)
-
-# 編譯 C++/CUDA 核心靜態函式庫
-add_library(vonnx_static STATIC ${VONNX_SOURCES})
-set_target_properties(vonnx_static PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-
-# 搜尋並連結必要函式庫
-find_package(CUDA REQUIRED)
-target_link_libraries(vonnx_static PRIVATE ${CUDA_LIBRARIES} onnxruntime)
-
-# 測試與 Benchmark 可執行檔
-add_executable(vonnx_benchmark tests/benchmark_vonnx.cpp)
-target_link_libraries(vonnx_benchmark PRIVATE vonnx_static ${CUDA_LIBRARIES} onnxruntime)
-
-# 訊息
-message(STATUS "vONNX Engine CMake 配置完成。")
+add_library(vonnx SHARED src/vonnx_c_api.cpp)
+target_link_libraries(vonnx PRIVATE vonnx_static)
+if(MSVC)
+ target_link_options(vonnx PRIVATE /MANIFEST:NO)
+endif()
+include(CTest)
+add_executable(test_scheduler tests/test_scheduler.cpp src/continuous_scheduler.cpp)
+target_include_directories(test_scheduler PRIVATE include)
+target_link_libraries(test_scheduler PRIVATE CUDA::cudart)
+if(MSVC)
+ target_compile_options(test_scheduler PRIVATE /UNDEBUG /utf-8)
+else()
+ target_compile_options(test_scheduler PRIVATE -UNDEBUG)
+endif()
+add_test(NAME scheduler_regression COMMAND test_scheduler)

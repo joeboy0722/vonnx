@@ -1,32 +1,28 @@
 #pragma once
-
 #include "vonnx/common.hpp"
-
+#include "vonnx/cuda_resources.hpp"
 namespace vonnx {
-
-// Letterbox 縮放比率與偏移詮釋資料
 struct AffineMatrix {
-    float scale;   // 縮放比例
-    float pad_x;   // X 軸 Fill Padding (像素)
-    float pad_y;   // Y 軸 Fill Padding (像素)
-    int src_w;     // 原始寬度
-    int src_h;     // 原始高度
+    float scale, pad_x, pad_y;
+    int src_w, src_h, resized_w, resized_h;
 };
-
-// 手寫 Fused CUDA Preprocess 算子
-// 支援一併執行：格式轉換 (BGR/RGB/NV12) -> Bilinear Letterbox 保比例縮放 -> 歸一化 (0-1) -> HWC 轉 CHW 記憶體佈局
-void launch_batched_preprocess(
-    const std::vector<const void*>& src_ptrs,
-    const std::vector<int>& src_widths,
-    const std::vector<int>& src_heights,
-    const std::vector<int>& src_strides,
-    const std::vector<PixelFormat>& formats,
-    float* dst_batch_tensor_gpu,     // 輸出 [B, 3, target_h, target_w] 的 GPU 記憶體
-    AffineMatrix* affine_meta_gpu,   // 輸出至 GPU 的 Affine 變換矩陣 (單批 B 個)
-    int batch_size,
-    int target_w,
-    int target_h,
-    cudaStream_t stream
-);
-
+struct PreprocessFrame {
+    const uint8_t *ptr;
+    int width, height, stride;
+    PixelFormat format;
+    AffineMatrix affine;
+};
+class PreprocessWorkspace {
+  public:
+    DeviceBuffer<PreprocessFrame> frames;
+    PinnedBuffer<PreprocessFrame> host_frames;
+    explicit PreprocessWorkspace(size_t batch) {
+        frames.allocate(batch);
+        host_frames.allocate(batch);
+    }
+};
+void launch_batched_preprocess(const std::vector<PreprocessFrame> &, PreprocessWorkspace &, float *,
+                               AffineMatrix *, int, int, cudaStream_t);
+void launch_prepared_preprocess(int batch, PreprocessWorkspace &, float *, AffineMatrix *, int, int,
+                                cudaStream_t);
 } // namespace vonnx

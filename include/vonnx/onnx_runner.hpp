@@ -1,45 +1,43 @@
 #pragma once
-
 #include "vonnx/common.hpp"
+#include "vonnx/cuda_resources.hpp"
 #include <onnxruntime_cxx_api.h>
-
 namespace vonnx {
-
-// ONNX Runtime 零拷貝推論執行器 (使用 Ort::IoBinding)
-class ONNXRunner {
-public:
-    ONNXRunner(const std::string& model_path, int use_gpu_id = 0);
-    ~ONNXRunner() = default;
-
-    // 取得模型導出的預設輸入高寬 (例如 640x640)
-    int get_input_width() const { return input_w_; }
-    int get_input_height() const { return input_h_; }
-    int get_num_classes() const { return num_classes_; }
-    int get_num_anchors() const { return num_anchors_; }
-
-    // 使用 Ort::IoBinding 執行零拷貝 (GPU Pointer to GPU Pointer) 的 Forward 推論
-    void run_zero_copy(
-        const float* d_input_tensor,   // Preprocess 產生的 [B, 3, H, W] GPU 指標
-        float* d_output_tensor,        // 預配置放 NMS 輸入的 [B, 4+C, N] GPU 指標
-        int batch_size,
-        cudaStream_t stream
-    );
-
-private:
-    Ort::Env env_{ORT_LOGGING_LEVEL_WARNING, "vONNXEngine"};
-    Ort::SessionOptions session_options_;
-    std::unique_ptr<Ort::Session> session_;
-    Ort::MemoryInfo memory_info_cuda_{"Cuda", OrtAllocatorType::OrtDeviceAllocator, 0, OrtMemTypeDefault};
-
-    std::string input_name_;
-    std::string output_name_;
-
-    int input_w_{640};
-    int input_h_{640};
-    int num_classes_{80};
-    int num_anchors_{8400};
-
-    std::vector<int64_t> output_shape_pattern_;
+struct ModelSpec {
+    std::string task, input_name;
+    int width{}, height{}, classes{}, anchors{}, channels{}, keypoints{}, keypoint_dims{}, mask_channels{},
+        mask_height{}, mask_width{}, stride{32};
+    bool dynamic_batch{};
+    std::vector<std::string> output_names;
+    std::vector<std::vector<int64_t>> output_shapes;
 };
+class ONNXRunner {
+  public:
+    ONNXRunner(const std::string &, int gpu = 0, int width = 640, int height = 640, int max_batch = 16,
+               cudaStream_t stream = nullptr);
+    ~ONNXRunner();
+    const ModelSpec &spec() const { return spec_; }
+    int get_input_width() const { return spec_.width; }
+    int get_input_height() const { return spec_.height; }
+    int get_num_classes() const { return spec_.classes; }
+    int get_num_anchors() const { return spec_.anchors; }
+    void run_zero_copy(const float *, const std::vector<float *> &outputs, int batch, cudaStream_t);
+    void initialize_cuda(int gpu, cudaStream_t stream, size_t arena_bytes);
+    void prepare_bindings(int slot, float *input, const std::vector<float *> &outputs, int max_batch);
+    void run(int slot, int batch);
 
+  private:
+    Ort::Env env_{ORT_LOGGING_LEVEL_ERROR, "vONNX"};
+    Ort::SessionOptions options_;
+    std::unique_ptr<Ort::Session> session_;
+    Ort::MemoryInfo memory_;
+    ModelSpec spec_;
+    std::string path_;
+    Ort::RunOptions run_options_;
+    struct Binding {
+        std::unique_ptr<Ort::IoBinding> io;
+        std::vector<Ort::Value> tensors;
+    };
+    std::vector<std::vector<std::unique_ptr<Binding>>> bindings_;
+};
 } // namespace vonnx

@@ -1,0 +1,9 @@
+ultralytics==8.4.115
+onnx==1.22.0
+onnxruntime-gpu==1.28.0
+pybind11==3.0.4
+numpy==2.5.1
+opencv-python==5.0.0.93
+pycocotools==2.0.11
+matplotlib==3.11.1
+nvidia-ml-py==13.610.43

@@ -1,52 +1,61 @@
 #pragma once
-
 #include "vonnx/common.hpp"
-#include "vonnx/paged_tensor_pool.hpp"
+#include "vonnx/deadline_waiter.hpp"
+#include <atomic>
+#include <condition_variable>
+#include <deque>
+#include <functional>
 #include <future>
 #include <mutex>
-#include <condition_variable>
-#include <queue>
 #include <thread>
-#include <atomic>
-#include <functional>
-
 namespace vonnx {
-
-// 完成推論後的回呼函數型別
-using InferenceCallback = std::function<void(const std::vector<DetectionResult>&)>;
-
-// 排程打包後的一批任務批次包
+using InferenceCallback = std::function<void(const std::vector<DetectionResult> &)>;
+struct PendingRequest {
+    FrameTask task{};
+    std::vector<uint8_t> owned_input;
+    std::promise<std::vector<DetectionResult>> promise;
+    InferenceCallback callback;
+    std::chrono::steady_clock::time_point submitted;
+    std::function<void()> release_input;
+    void release() {
+        if (release_input) {
+            auto fn = std::move(release_input);
+            fn();
+        }
+    }
+};
 struct BatchJob {
     std::vector<FrameTask> tasks;
-    std::promise<std::vector<DetectionResult>> result_promise;
-    InferenceCallback async_callback;
+    std::vector<std::shared_ptr<PendingRequest>> requests;
+    std::chrono::steady_clock::time_point dispatched;
+    double batch_wait_ms{};
+    void complete(std::vector<DetectionResult> results);
+    void fail(std::exception_ptr error);
 };
-
-// vONNX 微秒級 Continuous Dynamic Batch 排程器
 class ContinuousScheduler {
-public:
-    ContinuousScheduler(size_t max_batch_size, double max_latency_ms);
+  public:
+    ContinuousScheduler(size_t max_batch_size, double max_latency_ms, size_t capacity = 1024,
+                        size_t concurrency = 0, uint8_t *staging = nullptr, size_t page_size = 0);
     ~ContinuousScheduler();
-
-    // 生產端 (Producer): 外部相機/RTSP 串流發送 FrameTask 進入佇列
-    std::future<std::vector<DetectionResult>> submit_task(const FrameTask& task, InferenceCallback callback = nullptr);
-
-    // 消費端 (Consumer): 嘗試拉取一批湊好的動態 BatchJob (若超時或達 Max Batch 立即傳回)
-    bool pop_batch(BatchJob& out_job, int timeout_ms);
-
-    // 取得佇列中等待累積的任務數
+    std::future<std::vector<DetectionResult>> submit_task(const FrameTask &, InferenceCallback = nullptr);
+    bool pop_batch(BatchJob &, int timeout_ms);
     size_t pending_count();
-
-    // 停止排程器
     void stop();
+    void pause();
+    void resume();
+    std::string timer_backend() const { return waiter_.backend(); }
 
-private:
-    size_t max_batch_size_;
+  private:
+    size_t max_batch_size_, capacity_;
     double max_latency_ms_;
-    std::queue<std::pair<FrameTask, std::shared_ptr<BatchJob>>> task_queue_;
-    std::mutex queue_mutex_;
-    std::condition_variable queue_cv_;
-    std::atomic<bool> is_running_{true};
+    std::deque<std::shared_ptr<PendingRequest>> queue_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    bool accepting_{true};
+    bool terminal_{false};
+    size_t concurrency_{}, inflight_{}, page_size_{};
+    uint8_t *staging_{};
+    std::vector<size_t> free_inputs_;
+    DeadlineWaiter waiter_;
 };
-
 } // namespace vonnx

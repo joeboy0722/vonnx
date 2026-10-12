@@ -1,45 +1,46 @@
-import os
-import numpy as np
-from vonnx import vONNXEngine, EngineConfig, PixelFormat
+"""Run a few asynchronous requests using a prepared official model and real image."""
+
+import argparse
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from vonnx import EngineConfig, vONNXEngine, PixelFormat, load_image
+
 
 def main():
-    print("==========================================================")
-    print("  vONNX Engine: Python Quick Start 基礎推論範例          ")
-    print("==========================================================")
-
-    # 1. 建立引擎組態
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=Path, default=ROOT / "models/yolov8n/yolov8n.onnx")
+    parser.add_argument("--image", type=Path)
+    parser.add_argument("--imgsz", type=int, default=640)
+    parser.add_argument("--requests", type=int, default=4, choices=range(1, 33))
+    parser.add_argument("--batch", type=int, default=8)
+    args = parser.parse_args()
+    candidates = sorted((ROOT / "datasets/coco8/images").rglob("*.jpg"))
+    image_path = args.image or (candidates[0] if candidates else None)
+    if not args.model.is_file() or image_path is None:
+        parser.error("Prepare models/images first: python -m vonnx_tools prepare --scales n --datasets smoke")
+    image = load_image(str(image_path))
     config = EngineConfig()
-    config.model_path = "yolov8n.onnx"
-    config.max_batch_size = 16
-    config.max_latency_ms = 2.0
-    config.conf_threshold = 0.25
-    config.iou_threshold = 0.45
-    config.gpu_id = 0
-
-    if not os.path.exists(config.model_path):
-        print(f"請先確保專案目錄下存在模型檔案: {config.model_path}")
-        return
-
-    # 2. 實體化 vONNX 推論引擎
-    print("初始化 vONNX Engine...")
+    config.model_path = str(args.model)
+    config.imgsz = args.imgsz
+    config.max_batch_size = args.batch
+    config.max_input_height, config.max_input_width = image.shape[:2]
     engine = vONNXEngine(config)
+    try:
+        pending = [engine.submit_numpy(lane, lane, image, PixelFormat.RGB24) for lane in range(args.requests)]
+        for future in pending:
+            result = future.result(timeout=30)[0]
+            print(
+                f"request={result.frame_id} batch={result.batch_size} boxes={len(result.boxes)} keypoints={len(result.keypoints)} masks={len(result.masks)}"
+            )
+        engine.pause()
+        engine.resume()
+        print("Resource state:", engine.resource_stats.state)
+    finally:
+        engine.close()
 
-    # 3. 模擬輸入影像 (1920x1080 3-Channel BGR24 陣列)
-    dummy_frame = np.random.randint(0, 255, (1080, 1920, 3), dtype=np.uint8)
-
-    # 4. 提交推論請求
-    print("發送推論請求...")
-    results = engine.predict_numpy(stream_id=1, frame_id=101, array=dummy_frame, format=PixelFormat.BGR24)
-
-    # 5. 檢視推論結果
-    print(f"推論完成! 傳回串流 ID: {results[0].stream_id}, 幀 ID: {results[0].frame_id}")
-    print(f"偵測目標邊界框數量: {len(results[0].boxes)}")
-    for i, box in enumerate(results[0].boxes[:5]):
-        print(f"  [{i+1}] Class ID: {box.class_id}, Score: {box.score:.4f}, BBox: [{box.x1:.1f}, {box.y1:.1f}, {box.x2:.1f}, {box.y2:.1f}]")
-
-    # 6. 停止引擎
-    engine.stop()
-    print("vONNX Engine 已安全停止。")
 
 if __name__ == "__main__":
     main()

@@ -31,24 +31,15 @@ data/
 datasets/
 runs/
 vonnx_standalone_sdk/
-build_standalone_dll.py
-COCO128_ULTIMATE_BENCHMARK_REPORT*.md
-examples/eval_coco128_dataset.py
-examples/verify_coco_accuracy.py
-examples/ultimate_showdown.py
-examples/generate_ultimate_coco128_report.py
 
 # Large Model & Test Asset Files (User generated)
 *.pt
 *.onnx
-bus.jpg
-yolov8n.onnx
-yolov8s.onnx
-yolov8m.onnx
-yolov8l.onnx
-yolov8x.onnx
-yolov8n.pt
-yolov8s.pt
-yolov8m.pt
-yolov8l.pt
-yolov8x.pt
+*.zip
+
+# Model cache and development logs
+models/
+Ultralytics/
+*.log
+.pytest_cache/
+.ruff_cache/

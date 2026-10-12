@@ -7,6 +7,7 @@ import setuptools
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
+
 # 自動尋找 Windows MSVC cl.exe 的工具函數
 def find_msvc_cl_dir():
     if shutil.which("cl"):
@@ -28,11 +29,19 @@ def find_msvc_cl_dir():
     vswhere_path = os.path.expandvars("%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe")
     if os.path.exists(vswhere_path):
         try:
-            vs_path = subprocess.check_output([
-                vswhere_path, "-latest", "-products", "*",
-                "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-                "-property", "installationPath"
-            ], text=True).strip()
+            vs_path = subprocess.check_output(
+                [
+                    vswhere_path,
+                    "-latest",
+                    "-products",
+                    "*",
+                    "-requires",
+                    "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+                    "-property",
+                    "installationPath",
+                ],
+                text=True,
+            ).strip()
             if vs_path:
                 msvc_pattern = os.path.join(vs_path, "VC", "Tools", "MSVC", "*", "bin", "Hostx64", "x64")
                 matches = glob.glob(msvc_pattern)
@@ -43,6 +52,7 @@ def find_msvc_cl_dir():
 
     return None
 
+
 # 為 Windows 自動產生 onnxruntime.lib 匯入函式庫
 def ensure_onnxruntime_lib(build_temp, cl_dir):
     lib_path = os.path.join(build_temp, "onnxruntime.lib")
@@ -50,7 +60,11 @@ def ensure_onnxruntime_lib(build_temp, cl_dir):
         def_path = os.path.join(build_temp, "onnxruntime.def")
         with open(def_path, "w") as f:
             f.write("LIBRARY onnxruntime.dll\nEXPORTS\n    OrtGetApiBase\n")
-        lib_exe = os.path.join(cl_dir, "lib.exe") if (cl_dir and os.path.exists(os.path.join(cl_dir, "lib.exe"))) else "lib.exe"
+        lib_exe = (
+            os.path.join(cl_dir, "lib.exe")
+            if (cl_dir and os.path.exists(os.path.join(cl_dir, "lib.exe")))
+            else "lib.exe"
+        )
         try:
             subprocess.check_call([lib_exe, f"/def:{def_path}", f"/out:{lib_path}", "/machine:x64"])
             print(f"[vONNX Build] 成功匯出產生 onnxruntime.lib 於 {lib_path}")
@@ -58,10 +72,12 @@ def ensure_onnxruntime_lib(build_temp, cl_dir):
             print(f"[vONNX Build] 警告: 產生 onnxruntime.lib 失敗: {e}")
     return lib_path
 
+
 class CUDABuildExt(build_ext):
     def build_extensions(self):
         try:
             import pybind11
+
             pybind11_inc = pybind11.get_include()
         except ImportError:
             raise RuntimeError("編譯擴充模組需要 pybind11，請先執行: pip install pybind11")
@@ -82,6 +98,7 @@ class CUDABuildExt(build_ext):
         # 尋找 Python venv 中的 onnxruntime 相關目錄
         try:
             import onnxruntime
+
             ort_dir = os.path.dirname(onnxruntime.__file__)
             ort_capi_dir = os.path.join(ort_dir, "capi")
         except ImportError:
@@ -102,7 +119,7 @@ class CUDABuildExt(build_ext):
                 os.path.abspath("include"),
                 os.path.abspath("include/onnxruntime"),
                 cuda_inc,
-                pybind11_inc
+                pybind11_inc,
             ] + ext.include_dirs
 
             inc_flags = [f"-I{os.path.abspath(d)}" for d in include_dirs if os.path.exists(d)]
@@ -110,12 +127,20 @@ class CUDABuildExt(build_ext):
             obj_files = []
             # 1. 使用 nvcc 編譯 .cu 檔案為 .obj / .o
             for cu in cu_sources:
-                obj_name = os.path.join(build_temp, os.path.basename(cu) + (".obj" if os.name == "nt" else ".o"))
+                obj_name = os.path.join(
+                    build_temp, os.path.basename(cu) + (".obj" if os.name == "nt" else ".o")
+                )
                 nvcc_cmd = [
-                    "nvcc", "-c", os.path.abspath(cu),
-                    "-o", obj_name,
-                    "-O3", "--use_fast_math", "-std=c++17",
-                    "-Xcompiler", "/MD /utf-8 /wd4819" if os.name == "nt" else "-fPIC"
+                    "nvcc",
+                    "-c",
+                    os.path.abspath(cu),
+                    "-o",
+                    obj_name,
+                    "-O3",
+                    "--fmad=false",
+                    "-std=c++17",
+                    "-Xcompiler",
+                    "/MD /utf-8 /wd4819" if os.name == "nt" else "-fPIC",
                 ]
 
                 if cl_dir:
@@ -124,7 +149,11 @@ class CUDABuildExt(build_ext):
                 nvcc_cmd.extend(inc_flags)
 
                 print(f"[vONNX Build] 執行 NVCC 編譯 CUDA 核心: {' '.join(nvcc_cmd)}")
-                subprocess.check_call(nvcc_cmd)
+                header_mtime = max(os.path.getmtime(p) for p in glob.glob("include/vonnx/*"))
+                if not os.path.exists(obj_name) or os.path.getmtime(obj_name) < max(
+                    os.path.getmtime(cu), header_mtime, os.path.getmtime(__file__)
+                ):
+                    subprocess.check_call(nvcc_cmd)
                 obj_files.append(obj_name)
 
             ext.sources = cpp_sources
@@ -133,6 +162,8 @@ class CUDABuildExt(build_ext):
 
             if os.name == "nt":
                 ext.extra_compile_args = ["/O2", "/std:c++17", "/EHsc", "/utf-8", "/wd4819"]
+                # Extension DLL has no Win32 resources or private CRT manifest.
+                ext.extra_link_args = ["/MANIFEST:NO"]
                 ext.library_dirs.append(cuda_lib)
                 ext.library_dirs.append(build_temp)
                 if ort_capi_dir and os.path.exists(ort_capi_dir):
@@ -144,11 +175,12 @@ class CUDABuildExt(build_ext):
 
         super().build_extensions()
 
+
 setup(
     name="vonnx",
-    version="0.1.0",
-    author="Antigravity AI Team",
-    description="vONNX Engine: 高併發非同步 YOLOv8/v11 CUDA+ONNX 推論引擎",
+    version="0.3.0",
+    author="vONNX contributors",
+    description="Resident CUDA/ONNX Runtime inference for FP32 YOLOv8 Detect, Pose and Segmentation",
     packages=["vonnx"],
     setup_requires=["pybind11"],
     ext_modules=[

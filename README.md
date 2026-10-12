@@ -1,144 +1,136 @@
-# 🚀 vONNX Engine
+# vONNX 0.3
 
-**vONNX Engine** 是一款專為 **YOLOv8** 與 **YOLOv11** 設計的高併發、超低延遲非同步 CUDA/ONNX 推論引擎。
+以 C++17、CUDA 與 ONNX Runtime 建立的常駐 YOLOv8 推論引擎，支援 **Detect、Pose、Seg**。
+提供非同步請求、動態 ONNX 尺寸初始化、批次排程，以及 Python／C++／版本化 C API。
+目前主要驗證環境為 **Windows + RTX 3070 8GB**。
 
-借鏡大語言模型 (LLM) 推論引擎 (如 vLLM) 的架構思想，vONNX 結合了 **Paged VRAM Memory Pool**、**Continuous Dynamic Batching**、**Fused CUDA Preprocessor**、**ORT IoBinding 零拷貝介面** 與 **Batched Parallel CUDA NMS**，徹底解決傳統 OpenCV + PyTorch 部署在多路 RTSP 相機碼流下的 CPU 效能瓶頸。
+## 功能
 
----
+- 每筆請求有自己的結果與錯誤，保留 `stream_id`／`frame_id`；有界佇列滿載時明確拒絕。
+- 初始化時指定 `imgsz=640` 或 `(height, width)`，原始影像統一 letterbox 至固定推論尺寸。
+- session、CUDA streams、events、pinned staging 與各 batch 的 bindings 常駐重用。
+- Detect／Pose／Seg 共用前處理、框解碼與確定性類別感知 NMS；關鍵點與 masks 對應保留的框。
+- 支援 RGB24、BGR24、RGBA32、NV12；CPU 非同步輸入由引擎持有副本。
+- `pause()` 排空並保留資源；`resume()` 恢復；`close()` 釋放資源，`stop()` 保持終止語意。
+- 官方模型下載／匯出、正確性驗證與跑分各有獨立 CLI，結果可續跑並檢查模型／二進位雜湊。
 
-## 🔥 核心亮點 (Key Features)
+## 建置
 
-- 🧠 **Paged Visual Tensor Pool (分頁視覺記憶體池)**：
-  借鏡 vLLM `PagedAttention` 思想，預先配置 GPU 頁區塊，執行期零 `cudaMalloc` 阻塞開銷。
-- ⚡ **Fused CUDA Preprocessor (融合式 GPU 預處理)**：
-  解碼後的影像直傳 GPU VRAM，0.1ms 內完成 Letterbox 雙線性插值、RGB/BGR/NV12 轉置與浮點數歸一化，100% 繞過 CPU 瓶頸。
-- 🚀 **Continuous Dynamic Batching (微秒級連續動態湊批)**：
-  基於 C++17 無鎖佇列與多執行緒排程器，自動將非同步湧入的相機碼流以微秒級超時控制湊成 Dynamic Batch 進行推論。
-- 🎯 **Batched Parallel CUDA NMS (GPU 平行非極大值抑制)**：
-  Anchor 解碼、座標逆映射與 IoU 抑制 100% 於 GPU 端完成，僅拷貝最終過濾後的邊界框至 CPU。
-- 🔄 **ONNX Runtime Zero-Copy (GPU 零拷貝介面)**：
-  透過 `Ort::IoBinding` 實現 GPU Pointer To GPU Pointer 零拷貝前向推論。
-- 📦 **Zero-Dependency Runtime (生產環境零框架依賴)**：
-  執行期僅需 C++17/CUDA 與 ONNX Runtime，**零 OpenCV、零 PyTorch、零 Ultralytics 依賴**。
+需要 Visual Studio 2022 C++ 工具、CUDA Toolkit 13、相容的 cuDNN 9／ONNX Runtime GPU runtime。
+本機測試版本：Python 3.12、ORT GPU 1.28.0、Ultralytics 8.4.115、PyTorch 2.13.0+cu126。
+詳細依賴與 CMake 建置見 [驗證與建置指南](docs/validation.md)。
 
----
+全新 clone 可使用 Conda 建立環境；先依 [PyTorch 官方指令](https://pytorch.org/get-started/locally/)
+安裝 GPU 版 PyTorch。已有可用環境時不需要重建或替換它。
 
-## 📊 實測效能與精度對決報告 (Benchmark & Showdown)
-
-> **評測硬體**：`NVIDIA GeForce RTX 3070 (8GB VRAM)`
-> **測試數據集**：`COCO128` (128 張官方標準標註實圖)
-
-### 1. YOLOv8 全系列模型在 COCO128 官方真值 (Ground Truth) 精確度比對
-
-| 模型名稱 | 模型大小 | 精率 Precision (@0.25) | 召回率 Recall (@0.25) | F1-Score 指標 | 🎯 匹配 BBox 平均 IoU |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **yolov8n** | **12.4 MB** | **77.76 %** | **49.30 %** | **60.34 %** | **85.68 %** |
-| **yolov8s** | **42.8 MB** | **79.87 %** | **64.05 %** | **71.09 %** | **87.17 %** |
-| **yolov8m** | **99.1 MB** | **78.97 %** | **65.88 %** | **71.83 %** | **87.49 %** |
-| **yolov8l** | **167.0 MB** | **82.90 %** | **68.35 %** | **74.93 %** | **88.06 %** |
-| **yolov8x** | **260.6 MB** | **81.12 %** | **68.46 %** | **74.26 %** | **89.20 %** |
-
----
-
-### 2. 官方 PyTorch (GPU CUDA) vs vONNX Engine 多路併發直面對決總表 (4 / 8 / 16 / 32 路)
-
-| 模型名稱 | 路數 | PyTorch GPU (FPS) | PyTorch 延遲 (ms) | vONNX GPU (FPS) | vONNX 延遲 (ms) | 🚀 吞吐勝出倍數 | ⚡ 延遲降低倍數 |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **yolov8n** | **4 路** | 11.08 FPS | 351.25 ms | **64.18 FPS** | **21.99 ms** | 🔥 **5.79 倍** | ⚡ **15.97 倍** |
-| **yolov8n** | **8 路** | 21.27 FPS | 357.80 ms | **98.01 FPS** | **14.83 ms** | 🔥 **4.61 倍** | ⚡ **24.13 倍** |
-| **yolov8n** | **16 路** | 22.56 FPS | 689.50 ms | **135.69 FPS** | **9.69 ms** | 🔥 **6.01 倍** | ⚡ **71.16 倍** |
-| **yolov8n** | **32 路** | 22.09 FPS | 1401.98 ms | **163.25 FPS** | **6.40 ms** | 🔥 **7.39 倍** | ⚡ **219.03 倍** |
-| **yolov8s** | **4 路** | 21.13 FPS | 179.47 ms | **66.27 FPS** | **20.37 ms** | 🔥 **3.14 倍** | ⚡ **8.81 倍** |
-| **yolov8s** | **8 路** | 20.03 FPS | 380.79 ms | **82.67 FPS** | **22.89 ms** | 🔥 **4.13 倍** | ⚡ **16.63 倍** |
-| **yolov8s** | **16 路** | 22.69 FPS | 687.40 ms | **105.84 FPS** | **17.23 ms** | 🔥 **4.66 倍** | ⚡ **39.90 倍** |
-| **yolov8s** | **32 路** | 22.60 FPS | 1373.13 ms | **116.28 FPS** | **12.35 ms** | 🔥 **5.15 倍** | ⚡ **111.17 倍** |
-| **yolov8m** | **4 路** | 18.29 FPS | 207.88 ms | **50.64 FPS** | **29.56 ms** | 🔥 **2.77 倍** | ⚡ **7.03 倍** |
-| **yolov8m** | **8 路** | 18.24 FPS | 421.97 ms | **57.36 FPS** | **45.44 ms** | 🔥 **3.14 倍** | ⚡ **9.29 倍** |
-| **yolov8m** | **16 路** | 19.67 FPS | 793.95 ms | **65.49 FPS** | **42.02 ms** | 🔥 **3.33 倍** | ⚡ **18.89 倍** |
-| **yolov8m** | **32 路** | 19.51 FPS | 1593.73 ms | **69.99 FPS** | **44.83 ms** | 🔥 **3.59 倍** | ⚡ **35.55 倍** |
-| **yolov8l** | **4 路** | 16.87 FPS | 226.97 ms | **35.72 FPS** | **55.78 ms** | 🔥 **2.12 倍** | ⚡ **4.07 倍** |
-| **yolov8l** | **16 路** | 18.37 FPS | 848.54 ms | **32.31 FPS** | **125.48 ms** | 🔥 **1.76 倍** | ⚡ **6.76 倍** |
-| **yolov8x** | **16 路** | 8.47 FPS | 1823.23 ms | **28.35 FPS** | **150.85 ms** | 🔥 **3.35 倍** | ⚡ **12.09 倍** |
-| **yolov8x** | **32 路** | 2.62 FPS | 11635.47 ms | **29.98 FPS** | **156.98 ms** | 🔥 **11.44 倍** | ⚡ **74.12 倍** |
-
----
-
-## 🏗️ 系統架構 (Architecture)
-
-```mermaid
-graph TD
-    A[非同步 RTSP 相機碼流 x32~64] -->|RAW/NV12/BGR| B[Continuous Scheduler 無鎖佇列]
-    B -->|動態動態湊批 Batch=16| C[Paged Visual Tensor Pool]
-    C -->|GPU Memory Pointer| D[Fused CUDA Preprocess Kernel]
-    D -->|Letterbox & Normalize| E[ONNX Runtime CUDA EP / Ort::IoBinding]
-    E -->|Zero-Copy Tensor| F[Batched Parallel CUDA NMS Kernel]
-    F -->|D2H 邊界框| G[最終物體邊界框與類別分數]
-```
-
----
-
-## 🛠️ 編譯與安裝 (Installation)
-
-### 環境需求
-- Windows / Linux
-- NVIDIA CUDA Toolkit 11.8+ / 12.x
-- MSVC / GCC (支援 C++17)
-- Python 3.9+
-
-### 編譯安裝步驟
-1. 複製本儲存庫：
-   ```bash
-   git clone https://github.com/joeboy0722/vonnx.git
-   cd vonnx
-   ```
-
-2. 在您的 Python 虛擬環境 (`venv`) 中執行 editable 編譯安裝：
-   ```bash
-   pip install --no-build-isolation -e .
-   ```
-
----
-
-## 💻 快速開始與範例 (Examples)
-
-### 執行基礎範例
-```bash
-python examples/quick_start.py
-```
-
-### 執行全系列 YOLOv8 模型跑分
-```bash
-python examples/benchmark_all_yolov8_models.py
-```
-
-### 執行 50 路 4K 極限高壓測試
-```bash
-python examples/benchmark_4k_stress.py
-```
-
----
-
-## 📦 獨立 C/C++ DLL 導出與純 ctypes 呼叫 (Building Standalone DLL)
-
-除了 Python PyBind11 介面外，`vONNX Engine` 提供了純 C API 導出介面 [include/vonnx_c_api.h](file:///d:/YOLO碎片架構/include/vonnx_c_api.h)。您可以將其編譯為獨立的 `vonnx.dll`，供 **C++、C# (.NET)、Go、Rust** 或 **純 Python `ctypes`** (零外掛套件依賴) 直接載入呼叫。
-
-### 1. 純 C API 介面
-- `vonnx_create_engine()`：建立 GPU 推論引擎控制代碼。
-- `vonnx_predict()`：傳入影像指標 (支持 RGB24 / BGR24 / NV12)，取得目標邊界框。
-- `vonnx_destroy_engine()`：釋放引擎資源。
-
-### 2. 本地自建 DLL 步驟
-若您希望自建獨立 `vonnx.dll` 與封裝 SDK：
 ```powershell
-python build_standalone_dll.py
+conda create -p .\venv python=3.12 -y
+# 安裝 GPU 版 PyTorch 後：
+.\venv\python.exe -m pip install -r requirements-validation.txt
+.\venv\python.exe -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+.\build.ps1
 ```
-執行後將於 `vonnx_standalone_sdk/` 目錄下自動生成 `vonnx.dll`、標頭檔以及純 `ctypes` 測試腳本 `test_ctypes.py`。
 
----
+本專案的 Conda 環境使用 `venv\python.exe`。若使用一般 Python venv，請改用
+`.venv\Scripts\python.exe`，並傳入 `build.ps1 -Python <你的python.exe>`。
+建置產出 `vonnx/vonnx_py*.pyd` 與 `vonnx_standalone_sdk/vonnx.dll`；重建前關閉載入 DLL 的程序。
+獨立 DLL 使用者仍需準備 CUDA／cuBLAS／cuDNN／ORT runtime 的 DLL 搜尋路徑。
+環境、模型、資料集與編譯產物不包含在 Git repository。
 
-## ⚖️ 授權條款 (License)
+## 快速開始
 
-本專案採用 **[MIT License](LICENSE)** 開源授權，您可以自由商業化、修改與分發。
+先準備三種任務的 n 模型及小資料集，再執行少量真實影像請求：
 
-> **免責與模型權重聲明**：
-> `vONNX Engine` 僅為通用推論引擎框架。使用者載入之 ONNX 模型權重（如由 Ultralytics 訓練導出的模型）請遵循該權重原作者之授權條款 (如 AGPL-3.0 或商業授權)。
+```powershell
+.\venv\python.exe -m vonnx_tools prepare --scales n --datasets smoke
+.\venv\python.exe examples\quick_start.py
+```
+
+Python 非同步用法：
+
+```python
+from pathlib import Path
+from vonnx import EngineConfig, vONNXEngine, PixelFormat, load_image
+
+config = EngineConfig()
+config.model_path = "models/yolov8n/yolov8n.onnx"
+config.imgsz = 640                 # 也可使用 (384, 640)
+config.concurrency = 32
+config.max_batch_size = 8
+config.batch_mode = "throughput"   # 或 "latency"
+config.max_latency_ms = 2
+config.pipeline_depth = 2
+
+engine = vONNXEngine(config)
+try:
+    image_path = next(Path("datasets/coco8/images").rglob("*.jpg"))
+    image = load_image(str(image_path))  # RGB uint8、HWC
+    future = engine.submit_numpy(1, 42, image, PixelFormat.RGB24)
+    result = future.result(timeout=30)[0]
+    print(result.frame_id, len(result.boxes))
+finally:
+    engine.close()
+```
+
+同步入口為 `predict_numpy()`。Pose 加入 `keypoints[box_index]`；Seg 預設提供
+`masks[box_index]` 的原圖 ROI `x/y/width/height` 與 uint8 `data`，可設定 `full_masks=True`。
+GPU 輸入須保留至完成，並提供實際 producer stream handle。
+C API v2、舊 v1 相容方式與 C++ 用法見 [架構與 API](docs/architecture.md)。
+
+## 初始化設定
+
+| 設定 | 新介面預設 | 意義 |
+|---|---:|---|
+| `concurrency` | 32 | 已接受但尚未完成的請求上限，並非 CUDA stream 數 |
+| `max_batch_size` | 8 | 每批推論上限 |
+| `batch_mode` | `throughput` | `throughput` 或 `latency` |
+| `max_latency_ms` | 自動 | 吞吐 2 ms／低延遲 0 ms；是湊批等待，並非總延遲保證 |
+| `pipeline_depth` | 自動 | 吞吐 2 槽／低延遲 1 槽；可指定 1 或 2 |
+| `gpu_memory_budget_mb` | 6144 | 引擎 buffers 與 ORT arena 預算，非整個裝置的硬限制 |
+| `collect_timings` | `False` | 需要詳細 CUDA 階段計時時才開啟 |
+
+推論尺寸、模型與容量在建立後固定，變更時須關閉並建立新引擎。
+Python 輸入須為連續 uint8 陣列；NV12 為 `[H*3/2, W]`。尺寸須為正值且符合 stride。
+目前以 FP32、NCHW、無內嵌 NMS 的 YOLOv8 原始 ONNX 輸出為支援範圍。
+
+## 驗證與跑分
+
+```powershell
+# 需要已建置 DLL、n 模型及小資料集；不下載或執行完整跑分。
+.\venv\python.exe -m unittest discover -s tests -p "test_*.py" -v
+
+# s／640 的獨立短測流程：
+.\venv\python.exe -m vonnx_tools prepare --scales s --datasets smoke
+.\venv\python.exe -m vonnx_tools optimize --phase check
+.\venv\python.exe -m vonnx_tools optimize --phase quick
+# quick 六組皆勝出後，才允許執行 confirm：
+.\venv\python.exe -m vonnx_tools optimize --phase confirm
+```
+
+quick 每設定 100 次請求，25 次暖機排空後計分 75 次；confirm 每設定 500 次，25 次排除，重複 3 輪。
+完整驗證與跑分維持獨立指令，不會由短測自動啟動。
+`run_full.ps1` 預設每案例驗證 500 張、每模型跑分最多 500 次；全部資料須明確指定 `-ValidationLimit 0`。
+完整矩陣有數千案例，執行前請閱讀 [驗證與跑分指南](docs/validation.md)。
+
+## 效能與限制
+
+歷史 s／640 三輪確認曾在 16／32 路、batch 8 下比官方湊批快約 45%～51%；
+這是指定版本與測試配置的結果，並非所有模型／尺寸的保證。
+四模型 1920、FP32、batch 1 的短測，vONNX 合計約 17.76 次推論／秒、官方約 15.72。
+各模型共享 GPU 運算資源，獨立引擎不提供硬體分區或延遲隔離；增加路數可能只增加排隊。
+ORT 結尾同步仍保留，完全非同步模式的清理崩潰尚未解決。
+完整數據、二進位範圍與比較限制見 [效能記錄](docs/performance.md)。
+
+## 目錄
+
+| 目錄 | 用途 |
+|---|---|
+| `include/`、`src/`、`bindings/` | C++／CUDA 核心、C API 與 Python binding |
+| `vonnx/` | Python runtime 入口 |
+| `vonnx_tools/` | 模型準備、驗證、跑分與報告 CLI |
+| `examples/`、`tests/` | 精簡範例與回歸測試 |
+| `tools/` | 建置、下載與可選的診斷工具 |
+| `docs/` | API、驗證流程與效能記錄 |
+| `models/`、`datasets/`、`runs/` | 本機快取、測試結果與歷史歸檔；不提交 Git |
+
+引擎程式碼採 [MIT](LICENSE)。下載的模型權重與 Ultralytics 套件依其上游授權條款使用。
