@@ -181,6 +181,8 @@ setup(
     version="0.3.0",
     author="vONNX contributors",
     description="Resident CUDA/ONNX Runtime inference for FP32 YOLOv8 Detect, Pose and Segmentation",
+    license="MIT",
+    license_files=["LICENSE", "THIRD_PARTY_NOTICES.md"],
     packages=["vonnx"],
     setup_requires=["pybind11"],
     ext_modules=[

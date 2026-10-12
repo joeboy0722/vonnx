@@ -4,6 +4,9 @@
 提供非同步請求、動態 ONNX 尺寸初始化、批次排程，以及 Python／C++／版本化 C API。
 目前主要驗證環境為 **Windows + RTX 3070 8GB**。
 
+預編譯 Windows x64 SDK／Python 3.12 wheel 見 [GitHub Releases](https://github.com/joeboy0722/vonnx/releases)。
+安裝、runtime 依賴與 DLL／Python 呼叫方式見 [發布包使用指南](docs/release.md)。
+
 ## 功能
 
 - 每筆請求有自己的結果與錯誤，保留 `stream_id`／`frame_id`；有界佇列滿載時明確拒絕。
