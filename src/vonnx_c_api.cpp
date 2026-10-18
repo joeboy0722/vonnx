@@ -142,7 +142,7 @@ VONNX_API void vonnx_config_init_v3(vonnx_config_v3 *c) {
     if(!c) return;
     *c={}; c->version=3;c->struct_size=sizeof(*c);vonnx_config_init_v2(&c->base);
 }
-VONNX_API vonnx_engine_handle_t vonnx_create_engine_v3(const vonnx_config_v3 *c) {
+static vonnx_engine_handle_t create_v3(const vonnx_config_v3 *c, bool specialize=false,bool graph=false) {
     error_text.clear();
     try {
         if(!c || c->version!=3 || c->struct_size!=sizeof(*c) || c->precision<0 || c->precision>2 ||
@@ -151,6 +151,8 @@ VONNX_API vonnx_engine_handle_t vonnx_create_engine_v3(const vonnx_config_v3 *c)
            c->base.batch_mode<0 || c->base.batch_mode>1 || !c->base.concurrency)
             throw std::invalid_argument("Invalid v3 configuration");
         auto cfg=from_v1(&c->base.base);
+        cfg.graph_specialization=specialize?"auto":"off";
+        cfg.cuda_graph=graph;
         cfg.concurrency=c->base.concurrency;
         cfg.gpu_memory_budget_mb=c->base.gpu_memory_budget_mb;
         cfg.batch_mode=c->base.batch_mode?"latency":"throughput";
@@ -163,6 +165,40 @@ VONNX_API vonnx_engine_handle_t vonnx_create_engine_v3(const vonnx_config_v3 *c)
         if(c->precision_tool) cfg.precision_tool=c->precision_tool;
         return new vONNXEngine(cfg);
     } catch(...) {error();return nullptr;}
+}
+VONNX_API vonnx_engine_handle_t vonnx_create_engine_v3(const vonnx_config_v3 *c) {return create_v3(c);}
+VONNX_API void vonnx_config_init_v4(vonnx_config_v4 *c) {
+    if(!c)return;
+    *c={};c->version=4;c->struct_size=sizeof(*c);vonnx_config_init_v3(&c->base);
+}
+VONNX_API vonnx_engine_handle_t vonnx_create_engine_v4(const vonnx_config_v4 *c) {
+    error_text.clear();
+    if(!c || c->version!=4 || c->struct_size!=sizeof(*c) ||
+       c->graph_specialization<0 || c->graph_specialization>1 || c->cuda_graph<0 || c->cuda_graph>1) {
+        error_text="Invalid v4 configuration";return nullptr;
+    }
+    return create_v3(&c->base,c->graph_specialization==1,c->cuda_graph==1);
+}
+VONNX_API int vonnx_model_info_get_v4(vonnx_engine_handle_t h,vonnx_model_info_v4 *out) {
+    error_text.clear();
+    try {
+        if(!h || !out || out->version!=4 || out->struct_size!=sizeof(*out))
+            throw std::invalid_argument("Invalid v4 model descriptor");
+        const auto &s=static_cast<vONNXEngine*>(h)->model_spec();
+        out->graph_specialized=s.graph_specialized;
+        out->cuda_graph=s.cuda_graph;
+        for(int i=0;i<4;++i) {
+            out->source_input_shape[i]=s.source_input_shape.at(i);
+            out->execution_input_shape[i]=s.execution_input_shape.at(i);
+        }
+        if(s.source_model_sha256.size()>64 || s.prepared_model_sha256.size()>64)
+            throw std::runtime_error("Invalid model fingerprint");
+        std::memset(out->source_model_sha256,0,sizeof(out->source_model_sha256));
+        std::memset(out->prepared_model_sha256,0,sizeof(out->prepared_model_sha256));
+        std::memcpy(out->source_model_sha256,s.source_model_sha256.data(),s.source_model_sha256.size());
+        std::memcpy(out->prepared_model_sha256,s.prepared_model_sha256.data(),s.prepared_model_sha256.size());
+        return 0;
+    }catch(...){error();return -1;}
 }
 VONNX_API int vonnx_model_info_get_v3(vonnx_engine_handle_t h,vonnx_model_info_v3 *out) {
     error_text.clear();

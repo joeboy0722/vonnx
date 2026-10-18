@@ -1,0 +1,502 @@
+{
+  "binary_sha256": "55fbcfeab264247356752880a13e4d7a70720cb72ed3439703f1cbcd1f4c8948",
+  "environment": {
+    "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+    "versions": {
+      "ultralytics": "8.4.115",
+      "onnx": "1.22.0",
+      "onnxruntime-gpu": "1.28.0",
+      "torch": "2.13.0+cu126",
+      "numpy": "2.5.1",
+      "opencv-python": "5.0.0.93",
+      "pycocotools": "2.0.11"
+    }
+  },
+  "models": {
+    "yolov8s": {
+      "weight_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+      "source_onnx_sha256": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614",
+      "fp16_prepared": {
+        "sha256": "6058328cea401b71d0f11661a1e1caad49348f838996575e6c350a6d8715360b",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "converted": true,
+        "input_dtype": 1,
+        "output_dtypes": [
+          1
+        ],
+        "runtime_version": "1.28.0",
+        "cuda_prefer_nhwc": true,
+        "fixed_batch_size": 0
+      }
+    },
+    "yolov8s-pose": {
+      "weight_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+      "source_onnx_sha256": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45",
+      "fp16_prepared": {
+        "sha256": "4f96c83424d626650a4def469266e38250934e465f682a5753d3432440ce69d8",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "converted": true,
+        "input_dtype": 1,
+        "output_dtypes": [
+          1
+        ],
+        "runtime_version": "1.28.0",
+        "cuda_prefer_nhwc": true,
+        "fixed_batch_size": 0
+      }
+    },
+    "yolov8s-seg": {
+      "weight_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+      "source_onnx_sha256": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e",
+      "fp16_prepared": {
+        "sha256": "c8861c1ee3fef4c4f98cf4cab198a1eb5809746c675e2a6cfab3737ce69d362f",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "converted": true,
+        "input_dtype": 1,
+        "output_dtypes": [
+          1,
+          1
+        ],
+        "runtime_version": "1.28.0",
+        "cuda_prefer_nhwc": true,
+        "fixed_batch_size": 0
+      }
+    }
+  },
+  "source_sha256": {
+    "src/vonnx_engine.cpp": "4759644d0738003073b49a5c1ba695a0a208ceebe9c2de2ca825fd01e49f87f7",
+    "src/continuous_scheduler.cpp": "295cf998b6e3affbd20c220d442608198550628de17dc5f15a68168d0286560d",
+    "src/onnx_runner.cpp": "3b70435097599619a2db4d42666296cc35ea5d449445d0cc2f6d458ab9369077",
+    "src/cuda_nms.cu": "c6220031c5bee25db0bf09c57c11f95d9afb63f24c42cb6b26335fede9a139cc",
+    "src/cuda_preprocess.cu": "2153b1bdc140379e047d3ce7a1c76c719c0a2545af82b3a94de7b61aee173062",
+    "vonnx/precision.py": "efd4b46aa06944e86530189b66cbbcbdeb58914b8edbb5fca05893db512c8d8e"
+  },
+  "sample": "100 requests per case; 25 warmup + 75 measured; detailed timing enabled",
+  "rows": [
+    {
+      "case": "fp32_yolov8s_lanes1",
+      "precision": "fp32",
+      "model": "yolov8s",
+      "lanes": 1,
+      "fps": 132.2008712919687,
+      "mean_ms": 7.5421386666130275,
+      "p95_ms": 8.649359999617445,
+      "queue_ms": 0.008045333333333331,
+      "batch_wait_ms": 8.000000000000002e-05,
+      "dispatch_ms": 0.018558666666666664,
+      "h2d_ms": 0.04057813324034214,
+      "preprocess_ms": 0.08454271892706554,
+      "inference_ms": 6.9253516832987465,
+      "postprocess_ms": 0.15161898603041968,
+      "d2h_ms": 0.04405589327216149,
+      "waiting_share_percent": 0.3537988517517282,
+      "remainder_wall_ms": 7.515454666613027,
+      "physical_batch_histogram": {
+        "1": 75
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp32_yolov8s_lanes32",
+      "precision": "fp32",
+      "model": "yolov8s",
+      "lanes": 32,
+      "fps": 140.08338510187482,
+      "mean_ms": 143.37923999999475,
+      "p95_ms": 189.50514999996813,
+      "queue_ms": 61.12732266666667,
+      "batch_wait_ms": 0.06280533333333332,
+      "dispatch_ms": 38.08089333333332,
+      "h2d_ms": 0.2694694402317206,
+      "preprocess_ms": 0.654138025244077,
+      "inference_ms": 40.912582295735675,
+      "postprocess_ms": 0.9782237833738328,
+      "d2h_ms": 0.04770261322458585,
+      "waiting_share_percent": 69.23667703451137,
+      "remainder_wall_ms": 44.10821866666143,
+      "physical_batch_histogram": {
+        "8": 9,
+        "1": 1,
+        "2": 1
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp32_yolov8s-pose_lanes1",
+      "precision": "fp32",
+      "model": "yolov8s-pose",
+      "lanes": 1,
+      "fps": 127.9392769489519,
+      "mean_ms": 7.797102666663704,
+      "p95_ms": 8.371190000798379,
+      "queue_ms": 0.008066666666666666,
+      "batch_wait_ms": 6.8e-05,
+      "dispatch_ms": 0.01709466666666666,
+      "h2d_ms": 0.03797205323974291,
+      "preprocess_ms": 0.08464469224214553,
+      "inference_ms": 7.260682678222656,
+      "postprocess_ms": 0.11072768032550812,
+      "d2h_ms": 0.04046250661214193,
+      "waiting_share_percent": 0.3235731836801462,
+      "remainder_wall_ms": 7.771873333330371,
+      "physical_batch_histogram": {
+        "1": 75
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp32_yolov8s-pose_lanes32",
+      "precision": "fp32",
+      "model": "yolov8s-pose",
+      "lanes": 32,
+      "fps": 127.83403801161353,
+      "mean_ms": 156.34744266671382,
+      "p95_ms": 214.65061000071728,
+      "queue_ms": 66.67897199999999,
+      "batch_wait_ms": 0.061490666666666666,
+      "dispatch_ms": 41.70125066666667,
+      "h2d_ms": 0.25037312080462776,
+      "preprocess_ms": 0.6548275213440259,
+      "inference_ms": 44.925091857910154,
+      "postprocess_ms": 0.7364164288838705,
+      "d2h_ms": 0.0649092265466849,
+      "waiting_share_percent": 69.35944169198773,
+      "remainder_wall_ms": 47.90572933338049,
+      "physical_batch_histogram": {
+        "8": 9,
+        "1": 1,
+        "2": 1
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp32_yolov8s-seg_lanes1",
+      "precision": "fp32",
+      "model": "yolov8s-seg",
+      "lanes": 1,
+      "fps": 113.27929357229166,
+      "mean_ms": 8.80874133312318,
+      "p95_ms": 9.218019999752869,
+      "queue_ms": 0.007842666666666666,
+      "batch_wait_ms": 6.933333333333334e-05,
+      "dispatch_ms": 0.017077333333333337,
+      "h2d_ms": 0.04039594660202662,
+      "preprocess_ms": 0.08455935895442962,
+      "inference_ms": 8.006842918395996,
+      "postprocess_ms": 0.286152108112971,
+      "d2h_ms": 0.08561920017004013,
+      "waiting_share_percent": 0.2836879003288118,
+      "remainder_wall_ms": 8.783751999789846,
+      "physical_batch_histogram": {
+        "1": 75
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp32_yolov8s-seg_lanes32",
+      "precision": "fp32",
+      "model": "yolov8s-seg",
+      "lanes": 32,
+      "fps": 108.33934135174663,
+      "mean_ms": 190.7884493333889,
+      "p95_ms": 251.1507299992445,
+      "queue_ms": 82.016688,
+      "batch_wait_ms": 0.063812,
+      "dispatch_ms": 50.55628533333333,
+      "h2d_ms": 0.26884950309991834,
+      "preprocess_ms": 0.6678250712156296,
+      "inference_ms": 54.042100728352864,
+      "postprocess_ms": 1.3119073963165284,
+      "d2h_ms": 0.1407910398642222,
+      "waiting_share_percent": 69.52034349918124,
+      "remainder_wall_ms": 58.151664000055575,
+      "physical_batch_histogram": {
+        "8": 9,
+        "1": 1,
+        "2": 1
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp16_yolov8s_lanes1",
+      "precision": "fp16",
+      "model": "yolov8s",
+      "lanes": 1,
+      "fps": 141.2756095004508,
+      "mean_ms": 7.056462666635828,
+      "p95_ms": 8.080490001157159,
+      "queue_ms": 0.008217333333333333,
+      "batch_wait_ms": 8.000000000000002e-05,
+      "dispatch_ms": 0.018438666666666666,
+      "h2d_ms": 0.03949397340416908,
+      "preprocess_ms": 0.0848571722706159,
+      "inference_ms": 6.423836994171142,
+      "postprocess_ms": 0.15262378613154093,
+      "d2h_ms": 0.04169557332992554,
+      "waiting_share_percent": 0.37888672077034313,
+      "remainder_wall_ms": 7.0297266666358285,
+      "physical_batch_histogram": {
+        "1": 75
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp16_yolov8s_lanes32",
+      "precision": "fp16",
+      "model": "yolov8s",
+      "lanes": 32,
+      "fps": 257.8462617439563,
+      "mean_ms": 87.37166399992323,
+      "p95_ms": 107.72213999989617,
+      "queue_ms": 36.97091733333334,
+      "batch_wait_ms": 0.08209333333333334,
+      "dispatch_ms": 23.254226666666668,
+      "h2d_ms": 0.27661226818958917,
+      "preprocess_ms": 0.8569480494658153,
+      "inference_ms": 24.06566571553548,
+      "postprocess_ms": 0.8512716851631801,
+      "d2h_ms": 0.04964992036422094,
+      "waiting_share_percent": 69.02379395382276,
+      "remainder_wall_ms": 27.06442666658989,
+      "physical_batch_histogram": {
+        "8": 11
+      },
+      "padded_images": 13
+    },
+    {
+      "case": "fp16_yolov8s-pose_lanes1",
+      "precision": "fp16",
+      "model": "yolov8s-pose",
+      "lanes": 1,
+      "fps": 117.56399870591422,
+      "mean_ms": 8.474609333376671,
+      "p95_ms": 10.810220000166737,
+      "queue_ms": 0.008882666666666669,
+      "batch_wait_ms": 7.866666666666669e-05,
+      "dispatch_ms": 0.02406533333333333,
+      "h2d_ms": 0.037330773423115415,
+      "preprocess_ms": 0.08512853235006332,
+      "inference_ms": 7.796192003885905,
+      "postprocess_ms": 0.11092053353786469,
+      "d2h_ms": 0.044547840108474096,
+      "waiting_share_percent": 0.3897131462637857,
+      "remainder_wall_ms": 8.441582666710005,
+      "physical_batch_histogram": {
+        "1": 75
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp16_yolov8s-pose_lanes32",
+      "precision": "fp16",
+      "model": "yolov8s-pose",
+      "lanes": 32,
+      "fps": 276.4378731688248,
+      "mean_ms": 91.66971999996652,
+      "p95_ms": 110.66349999964586,
+      "queue_ms": 39.389227999999996,
+      "batch_wait_ms": 0.06937333333333333,
+      "dispatch_ms": 24.34383866666667,
+      "h2d_ms": 0.2616405367851257,
+      "preprocess_ms": 0.6453282137711843,
+      "inference_ms": 25.1942466990153,
+      "postprocess_ms": 0.7812778699398041,
+      "d2h_ms": 0.06760021284222603,
+      "waiting_share_percent": 69.60034349403848,
+      "remainder_wall_ms": 27.86727999996652,
+      "physical_batch_histogram": {
+        "8": 10
+      },
+      "padded_images": 5
+    },
+    {
+      "case": "fp16_yolov8s-seg_lanes1",
+      "precision": "fp16",
+      "model": "yolov8s-seg",
+      "lanes": 1,
+      "fps": 119.81546501356114,
+      "mean_ms": 8.324465333353146,
+      "p95_ms": 9.165939999547845,
+      "queue_ms": 0.008325333333333334,
+      "batch_wait_ms": 6.400000000000002e-05,
+      "dispatch_ms": 0.017250666666666668,
+      "h2d_ms": 0.04024063989520073,
+      "preprocess_ms": 0.08486314574877421,
+      "inference_ms": 7.46781951268514,
+      "postprocess_ms": 0.27837866644064585,
+      "d2h_ms": 0.08365183979272843,
+      "waiting_share_percent": 0.30800776954730924,
+      "remainder_wall_ms": 8.298825333353147,
+      "physical_batch_histogram": {
+        "1": 75
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp16_yolov8s-seg_lanes32",
+      "precision": "fp16",
+      "model": "yolov8s-seg",
+      "lanes": 32,
+      "fps": 208.31684158377018,
+      "mean_ms": 110.17908266665472,
+      "p95_ms": 135.64137000048504,
+      "queue_ms": 46.857856000000005,
+      "batch_wait_ms": 0.08341599999999999,
+      "dispatch_ms": 29.40781199999999,
+      "h2d_ms": 0.27061845203240714,
+      "preprocess_ms": 0.7483494299650192,
+      "inference_ms": 29.824385528564452,
+      "postprocess_ms": 1.4257390960057577,
+      "d2h_ms": 0.1447598926226298,
+      "waiting_share_percent": 69.2954435198858,
+      "remainder_wall_ms": 33.82999866665473,
+      "physical_batch_histogram": {
+        "8": 11
+      },
+      "padded_images": 13
+    },
+    {
+      "case": "fp32_yolov8s_single_throughput_auto",
+      "precision": "fp32",
+      "model": "yolov8s",
+      "lanes": 1,
+      "fps": 100.60015369018872,
+      "mean_ms": 9.91844666651256,
+      "p95_ms": 10.82498000087071,
+      "queue_ms": 0.008066666666666679,
+      "batch_wait_ms": 2.5096906666666667,
+      "dispatch_ms": 0.027927999999999998,
+      "h2d_ms": 0.03992618667582671,
+      "preprocess_ms": 0.08437205225229263,
+      "inference_ms": 6.756098143259684,
+      "postprocess_ms": 0.15138176014026006,
+      "d2h_ms": 0.042420906523863475,
+      "waiting_share_percent": 25.666169501402642,
+      "remainder_wall_ms": 7.372761333179227,
+      "physical_batch_histogram": {
+        "1": 75
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp16_yolov8s_single_throughput_auto",
+      "precision": "fp16",
+      "model": "yolov8s",
+      "lanes": 1,
+      "fps": 38.773215462754884,
+      "mean_ms": 25.757657333136496,
+      "p95_ms": 27.449840000190306,
+      "queue_ms": 0.009756000000000006,
+      "batch_wait_ms": 2.4445360000000003,
+      "dispatch_ms": 0.028176,
+      "h2d_ms": 0.03958655993143718,
+      "preprocess_ms": 0.16876202742258709,
+      "inference_ms": 22.443970489501954,
+      "postprocess_ms": 0.15713493386904398,
+      "d2h_ms": 0.0434692265590032,
+      "waiting_share_percent": 9.63778641781361,
+      "remainder_wall_ms": 23.275189333136495,
+      "physical_batch_histogram": {
+        "8": 75
+      },
+      "padded_images": 525
+    },
+    {
+      "case": "fp16_yolov8s_single_throughput_dynamic",
+      "precision": "fp16",
+      "model": "yolov8s",
+      "lanes": 1,
+      "fps": 103.39116115862795,
+      "mean_ms": 9.649442666729252,
+      "p95_ms": 10.721960000591935,
+      "queue_ms": 0.00861733333333333,
+      "batch_wait_ms": 2.462568,
+      "dispatch_ms": 0.025126666666666665,
+      "h2d_ms": 0.04093055985867977,
+      "preprocess_ms": 0.08698794553677242,
+      "inference_ms": 6.51026216506958,
+      "postprocess_ms": 0.15438250730435055,
+      "d2h_ms": 0.04166058669487635,
+      "waiting_share_percent": 25.870012250626107,
+      "remainder_wall_ms": 7.153130666729252,
+      "physical_batch_histogram": {
+        "1": 75
+      },
+      "padded_images": 0
+    },
+    {
+      "case": "fp32_yolov8s_lanes32_fixed",
+      "precision": "fp32",
+      "model": "yolov8s",
+      "lanes": 32,
+      "fps": 194.97413863059043,
+      "mean_ms": 127.91084800000438,
+      "p95_ms": 154.30921999941347,
+      "queue_ms": 54.27975333333334,
+      "batch_wait_ms": 0.07870533333333332,
+      "dispatch_ms": 34.268488000000005,
+      "h2d_ms": 0.275531947016716,
+      "preprocess_ms": 0.6675763277212778,
+      "inference_ms": 36.346351318359375,
+      "postprocess_ms": 1.0544605882962546,
+      "d2h_ms": 0.04337066705028216,
+      "waiting_share_percent": 69.28806121796927,
+      "remainder_wall_ms": 39.28390133333771,
+      "physical_batch_histogram": {
+        "8": 10
+      },
+      "padded_images": 5
+    },
+    {
+      "case": "fp32_yolov8s-pose_lanes32_fixed",
+      "precision": "fp32",
+      "model": "yolov8s-pose",
+      "lanes": 32,
+      "fps": 187.0575154466163,
+      "mean_ms": 134.6631266665645,
+      "p95_ms": 162.01215000000957,
+      "queue_ms": 57.92483866666668,
+      "batch_wait_ms": 0.06479866666666666,
+      "dispatch_ms": 35.84624933333334,
+      "h2d_ms": 0.2553702399134636,
+      "preprocess_ms": 0.6652586766084035,
+      "inference_ms": 38.250372823079424,
+      "postprocess_ms": 0.8378402058283488,
+      "d2h_ms": 0.06538154646754264,
+      "waiting_share_percent": 69.68194559971197,
+      "remainder_wall_ms": 40.82723999989781,
+      "physical_batch_histogram": {
+        "8": 10
+      },
+      "padded_images": 5
+    },
+    {
+      "case": "fp32_yolov8s-seg_lanes32_fixed",
+      "precision": "fp32",
+      "model": "yolov8s-seg",
+      "lanes": 32,
+      "fps": 136.82678258374125,
+      "mean_ms": 165.4820773333146,
+      "p95_ms": 201.91756999920472,
+      "queue_ms": 69.86640799999999,
+      "batch_wait_ms": 0.07361200000000001,
+      "dispatch_ms": 44.69092666666667,
+      "h2d_ms": 0.2799974396824837,
+      "preprocess_ms": 0.7289378114541372,
+      "inference_ms": 47.20054260253906,
+      "postprocess_ms": 1.3088712573051453,
+      "d2h_ms": 0.13938816130161286,
+      "waiting_share_percent": 69.27091351154397,
+      "remainder_wall_ms": 50.85113066664795,
+      "physical_batch_histogram": {
+        "8": 11
+      },
+      "padded_images": 13
+    }
+  ]
+}

@@ -1,9 +1,11 @@
-# vONNX 0.4.0
+# vONNX 0.5.0
 
 以 C++17、CUDA 與 ONNX Runtime 建立的常駐 YOLOv8 推論引擎，支援 **Detect、Pose、Seg**。
 提供非同步請求、動態 ONNX 尺寸初始化、批次排程，以及 Python／C++／版本化 C API。
-新增 FP16：`config.precision = "fp16"` 可由引擎轉換 FP32 ONNX；
+支援 FP16：`config.precision = "fp16"` 可由引擎轉換 FP32 ONNX；
 預設 `auto` 保留來源精度。詳細限制與驗證指令見 [FP16 指南](docs/fp16.md)。
+v0.5.0 新增可選的初始化圖專化、CUDA Graph 與 C API v4，減少可預計算 shape 工作造成的中途同步。
+兩項優化預設關閉，既有尺寸、精度、路數、動態 batch 與生命週期介面保留。
 目前主要驗證環境為 **Windows + RTX 3070 8GB**。
 
 預編譯 Windows x64 SDK／Python 3.12 wheel 見 [GitHub Releases](https://github.com/joeboy0722/vonnx/releases)。
@@ -81,7 +83,8 @@ finally:
 同步入口為 `predict_numpy()`。Pose 加入 `keypoints[box_index]`；Seg 預設提供
 `masks[box_index]` 的原圖 ROI `x/y/width/height` 與 uint8 `data`，可設定 `full_masks=True`。
 GPU 輸入須保留至完成，並提供實際 producer stream handle。
-C API v3 精度設定與 C++ 用法見 [發布包使用指南](docs/release.md)；v1／v2 保持相容。
+C API v4 圖專化／Graph 設定與 C++ 用法見 [發布包使用指南](docs/release.md)；v1／v2／v3 布局保持相容。
+C++ 使用者須以新標頭重新編譯；更新 Python／DLL 時請一併更新配套的 precision.py。
 
 ## 初始化設定
 
@@ -96,17 +99,24 @@ C API v3 精度設定與 C++ 用法見 [發布包使用指南](docs/release.md)�
 | `collect_timings` | `False` | 需要詳細 CUDA 階段計時時才開啟 |
 | `precision` | `auto` | 辨識原精度；`fp16` 內部轉換，`fp32` 拒絕半精度來源 |
 | `batch_shape_policy` | `auto` | FP16 吞吐模式固定最大執行 batch 並補零；低延遲／FP32 保持動態 |
+| `graph_specialization` | `off` | `auto` 專化初始化尺寸；動態執行 batch 仍保留動態 |
+| `cuda_graph` | `False` | 要求圖專化＋固定執行 batch；每槽初始化 capture，ORT 結尾同步保留 |
 
 推論尺寸、模型與容量在建立後固定，變更時須關閉並建立新引擎。
 Python 輸入須為連續 uint8 陣列；NV12 為 `[H*3/2, W]`。尺寸須為正值且符合 stride。
 支援 FP32／FP16 NCHW、無內嵌 NMS 的 YOLOv8 原始 ONNX 輸出。
-三種 s／640 的完整 AP 驗證已通過；其他模型與尺寸尚未取得同等準確度驗證。
+v0.5.0 已通過三種 s／640、FP32／FP16、三種執行模式的500張抽樣AP回歸；
+這不是完整資料集驗證，其他模型與尺寸尚未取得同等準確度驗證。
 
 ## 驗證與跑分
 
 ```powershell
 # 需要已建置 DLL、n 模型及小資料集；不下載或執行完整跑分。
 .\venv\python.exe -m unittest discover -s tests -p "test_*.py" -v
+
+# 僅執行本版500張AP抽樣回歸，不接續效能跑分：
+.\venv\python.exe tools\diagnostics\ap_release.py --resume
+.\venv\python.exe tools\diagnostics\ap_release_report.py
 
 # s／640 的獨立短測流程：
 .\venv\python.exe -m vonnx_tools prepare --scales s --datasets smoke
@@ -123,14 +133,24 @@ quick 每設定 100 次請求，25 次暖機排空後計分 75 次；confirm 每
 
 ## 效能與限制
 
-本版 FP16 s／640 三輪短測確認在 16／32 路、batch 8 下為官方 FP16 湊批的約 2.20～2.26 倍；
-這是指定版本與測試配置的結果，並非所有模型／尺寸的保證。
-相對官方 FP32，COCO AP50–95 最大下降 0.0385 個百分點，三任務皆符合 0.5 的門檻。
-影像數、各項 AP 與模型／二進位雜湊見 [AP 驗證報告](docs/ap_fp16.md)。
-四模型 1920、FP32、batch 1 的短測，vONNX 合計約 17.76 次推論／秒、官方約 15.72。
+本版 s／640 相對修改前工作目錄引擎，啟用圖專化＋Graph 的三輪短測中位數：
+FP32 單路平均 7.17→6.34 ms、FP16 單路 6.64→3.88 ms；FP16／32路吞吐317→361 FPS。
+這些是指定硬體與設定的結果，不是相對官方的同輪新測，也不保證所有情境均加速。
+X／L／n 同跑1920的FP16收益約2%，仍無GPU延遲隔離；FP32主案例未完成三輪改善確認。
+
+本版500張抽樣AP共18個設定，對照相同權重官方FP32，AP50–95最大差距0.0900個百分點，
+皆低於0.5的門檻。範圍與模型／二進位雜湊見 [v0.5.0抽樣AP報告](docs/ap_v050.md)。
+[v0.4.0完整AP](docs/ap_fp16.md) 與 [舊版官方效能對照](docs/performance.md) 保留作歷史資料，不能當成本版完整驗收。
+先前版本四模型 1920、FP32、batch 1 的短測，vONNX 合計約 17.76 次推論／秒、官方約 15.72。
 各模型共享 GPU 運算資源，獨立引擎不提供硬體分區或延遲隔離；增加路數可能只增加排隊。
 ORT 結尾同步仍保留，完全非同步模式的清理崩潰尚未解決。
 完整數據、二進位範圍與比較限制見 [效能記錄](docs/performance.md)。
+
+先前階段的 [延遲優化實作與短測](docs/latency_optimization.md)。
+另有預設關閉的 [初始化圖專化與 CUDA Graph](docs/graph_specialization.md) 功能，
+使用者可明確選用；本輪比較與限制見 [跨模型等待報告](docs/software_wait.md)。
+單路用途請選 `batch_mode="latency"`、`max_batch_size=1`、`max_latency_ms=0`；
+FP16 throughput 的固定最大 batch 會補零，單路只改等待時間並不會取消這項計算。
 
 ## 目錄
 

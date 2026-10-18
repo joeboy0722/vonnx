@@ -1,8 +1,9 @@
-# vONNX 0.4.0 Windows x64 發布包
+# vONNX 0.5.0 Windows x64 發布包
 
-本版新增 FP16 自動辨識、內部轉換快取、原生半精度 I/O 與 C API v3。
-三種 s／640 的完整 COCO AP 已通過，詳見 [AP 報告](ap_fp16.md)；
-精度與固定 batch 策略見 [FP16 指南](fp16.md)。舊 v0.3.0 不包含這些功能。
+本版新增可選圖專化、CUDA Graph、C API v4，以及提交與ORT生命週期修正。
+三種s／640、FP32／FP16、原模式／專化／Graph共18個設定，各500張抽樣AP通過，
+詳見 [本版AP報告](ap_v050.md)；未重跑完整AP或長時間跑分。
+精度與固定batch策略見 [FP16指南](fp16.md)，選用優化見 [圖專化指南](graph_specialization.md)。
 
 ## 授權與依賴
 
@@ -20,7 +21,7 @@ Python 可透過 `VONNX_DLL_DIRS` 指定多個 DLL 目錄（Windows 用分號分
 ## Python 安裝與呼叫
 
 ```powershell
-python -m pip install .\vonnx-0.4.0-cp312-cp312-win_amd64.whl
+python -m pip install .\vonnx-0.5.0-cp312-cp312-win_amd64.whl
 $env:VONNX_DLL_DIRS = 'C:\runtime\ort;C:\runtime\cuda;C:\runtime\cudnn'
 ```
 
@@ -57,8 +58,8 @@ CPU 非同步輸入會複製；GPU 輸入須保持有效直到完成，並傳入
 
 SDK zip 包含 `vonnx.dll`、`vonnx.lib`、`vonnx_c_api.h`、`precision.py` 與 `c_api.cpp`，
 另有 Python 範例、使用方式、AP 報告、MIT LICENSE 與第三方授權聲明。
-原生 FP32 轉 FP16 需要可用的 Python、ONNX 1.22.0 與 ORT GPU 1.28.0；
-直接執行既有 FP32／FP16 ONNX 不需要轉換器。
+原生 FP32 轉 FP16 或啟用圖專化，需要可用的 Python、ONNX 1.22.0 與 ORT GPU 1.28.0；
+不轉換且不專化時，直接執行既有 FP32／FP16 ONNX 不需要模型準備工具。
 在 VS 2022 x64 Native Tools 命令列：
 
 ```powershell
@@ -94,3 +95,19 @@ ONNX 須為 FP32／FP16 NCHW YOLOv8 原始輸出、nms=False；支援 Detect/Pos
 完整驗證／跑分為獨立指令，詳細見 `docs/validation.md`；不會自動開始。
 ORT 結尾同步仍保留；多引擎共享 GPU 算力／頻寬，並不提供硬體隔離。
 既有跑分的版本與範圍見 `docs/performance.md`，不代表所有硬體都能得到相同增幅。
+
+## v0.5.0 選用優化與相容性
+
+Python／C++：`graph_specialization="auto"` 專化初始化尺寸；`cuda_graph=True` 額外要求固定執行batch。
+兩者預設關閉，沒有砍掉動態batch、路數、等待時間或精度設定。固定batch不足時補零，只回傳真實請求。
+每引擎仍使用一個常駐ORT session，ORT結尾安全同步保留；pause/resume不重新capture或轉換。
+
+C使用 `vonnx_config_init_v4`／`vonnx_create_engine_v4`，並設定
+`graph_specialization=1`、`cuda_graph=1`；`vonnx_model_info_get_v4`查詢狀態。
+v4內嵌v3設定，完整範例見 `graph_specialization.py` 與圖專化指南。
+v1／v2／v3布局與結果結構保留；C++使用新標頭時須重新編譯。
+部署時一併替換native模組、Python套件與precision.py，不要混搭新舊配套。
+
+模型準備會增加首次初始化時間與磁碟快取；失敗明確報錯，不自動改精度或關閉優化。
+close會釋放session／arena／CUDA資源；每載入模組保留一份程序生命週期ORT Env／logger，以避免DLL退出順序崩潰。
+1920多模型仍可能受GPU／驅動排程拖延；本版不提供硬體隔離。

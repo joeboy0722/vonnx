@@ -43,12 +43,19 @@ def smoke(case):
     summaries=[]; max_pre=0.; max_raw=0.; prepared=None; score_ties=[]; configurations=[]
     for batch in case.get('batch_limits',(1,2,4,8)):
         eng=engine(case['model'],shape,batch=batch,debug=True,precision=case.get('precision','fp16'),
-                   model_path=case.get('model_path'))
+                   model_path=case.get('model_path'),graph_specialization=case.get('graph_specialization','off'),
+                   batch_shape_policy=case.get('batch_shape_policy','auto'),cuda_graph=case.get('cuda_graph',False))
         try:
             spec=eng.model_spec
             configurations.append(dict(max_batch_size=batch,fixed_batch_size=spec.fixed_batch_size,
                                        cuda_prefer_nhwc=spec.cuda_prefer_nhwc))
-            if prepared is None:
+            if prepared is None or prepared['path']!=spec.prepared_model_path:
+                if prepared is not None:
+                    # A fixed-batch reference cannot serve the next batch shape.
+                    # Release its arena before constructing the replacement.
+                    del session
+                    import gc
+                    gc.collect()
                 prepared=dict(path=spec.prepared_model_path,sha256=sha256(spec.prepared_model_path),
                               source_precision=spec.source_precision,effective_precision=spec.effective_precision,
                               input_dtype=spec.input_dtype,output_dtypes=spec.output_dtypes)
@@ -100,7 +107,8 @@ def smoke(case):
                                 reference=output[pos:pos+1].astype(np.float32)
                                 value=np.asarray(result.debug_outputs[k],np.float32).reshape(reference.shape)
                                 if not np.isfinite(value).all():raise AssertionError('Non-finite engine output')
-                                np.testing.assert_allclose(value,reference,atol=1e-3,rtol=1e-2)
+                                half=spec.effective_precision!='fp32'
+                                np.testing.assert_allclose(value,reference,atol=1e-3 if half else 1e-4,rtol=1e-2 if half else 1e-3)
                                 max_raw=max(max_raw,float(np.abs(value-reference).max()))
                             try:
                                 summaries.append(compare(result,refs[pos],inputs[j].shape[:2]))

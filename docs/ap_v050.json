@@ -1,0 +1,1901 @@
+{
+  "passed": true,
+  "scope": "500-image deterministic COCO val2017 subset per task; not full AP",
+  "seed": 20261011,
+  "binary_sha256": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+  "converter_sha256": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+  "sdk_dll_sha256": "027ea326c11753700981877dce5231a71a7c847ab8f779cbc198f9158f1b364f",
+  "environment": {
+    "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+    "versions": {
+      "ultralytics": "8.4.115",
+      "onnx": "1.22.0",
+      "onnxruntime-gpu": "1.28.0",
+      "torch": "2.13.0+cu126",
+      "numpy": "2.5.1",
+      "opencv-python": "5.0.0.93",
+      "pycocotools": "2.0.11"
+    }
+  },
+  "allowed_difference_percentage_points": 0.5,
+  "reference_precision": "official PyTorch FP32",
+  "imgsz": [
+    640,
+    640
+  ],
+  "batch": 1,
+  "confidence": 0.001,
+  "iou": 0.7,
+  "max_det": 300,
+  "rect": false,
+  "models": [
+    {
+      "case": {
+        "id": "yolov8s-fp32-off",
+        "model": "yolov8s",
+        "precision": "fp32",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "off",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.46121750691310914,
+          "official_ap": 0.46124078592987644,
+          "difference_percentage_points": 0.0023279016767296934,
+          "drop_percentage_points": 0.0023279016767296934
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614",
+        "source_precision": "fp32",
+        "effective_precision": "fp32",
+        "graph_specialized": false,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s",
+        "task": "detect",
+        "weight": "models\\yolov8s\\yolov8s.pt",
+        "onnx": "models\\yolov8s\\yolov8s.onnx",
+        "weight_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "onnx_sha256": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:20:26.219412+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "detect",
+          "head": "Detect",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s.pt",
+        "official_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 30.76599999999962
+    },
+    {
+      "case": {
+        "id": "yolov8s-pose-fp32-off",
+        "model": "yolov8s-pose",
+        "precision": "fp32",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "off",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.556689205543805,
+          "official_ap": 0.5567218502652078,
+          "difference_percentage_points": 0.003264472140285246,
+          "drop_percentage_points": 0.003264472140285246
+        },
+        "keypoints": {
+          "engine_ap": 0.5986969606597747,
+          "official_ap": 0.5987172224357178,
+          "difference_percentage_points": 0.002026177594305345,
+          "drop_percentage_points": 0.002026177594305345
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "9ad9b0bc52e7d79148182e0c2f45e62408549834d568168aa0ebc990679eec9c",
+      "prepared_model": {
+        "sha256": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45",
+        "source_precision": "fp32",
+        "effective_precision": "fp32",
+        "graph_specialized": false,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s-pose",
+        "task": "pose",
+        "weight": "models\\yolov8s-pose\\yolov8s-pose.pt",
+        "onnx": "models\\yolov8s-pose\\yolov8s-pose.onnx",
+        "weight_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "onnx_sha256": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-pose model trained on /usr/src/app/ultralytics/datasets/coco-pose.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:35:22.096822+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "pose",
+          "head": "Pose",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False",
+          "kpt_shape": "[17, 3]"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-pose.pt",
+        "official_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 38.40599999999904
+    },
+    {
+      "case": {
+        "id": "yolov8s-seg-fp32-off",
+        "model": "yolov8s-seg",
+        "precision": "fp32",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "off",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.4577392440865713,
+          "official_ap": 0.45760646310016007,
+          "difference_percentage_points": 0.013278098641122948,
+          "drop_percentage_points": 0.0
+        },
+        "segm": {
+          "engine_ap": 0.369190725318421,
+          "official_ap": 0.36884668539237575,
+          "difference_percentage_points": 0.03440399260452587,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e",
+        "source_precision": "fp32",
+        "effective_precision": "fp32",
+        "graph_specialized": false,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s-seg",
+        "task": "segment",
+        "weight": "models\\yolov8s-seg\\yolov8s-seg.pt",
+        "onnx": "models\\yolov8s-seg\\yolov8s-seg.onnx",
+        "weight_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "onnx_sha256": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-seg model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:49:44.237595+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "segment",
+          "head": "Segment",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          },
+          {
+            "name": "output1",
+            "shape": [
+              "batch",
+              32,
+              "mask_height",
+              "mask_width"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-seg.pt",
+        "official_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 111.26599999999962
+    },
+    {
+      "case": {
+        "id": "yolov8s-fp32-specialized",
+        "model": "yolov8s",
+        "precision": "fp32",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.46121750691310914,
+          "official_ap": 0.46124078592987644,
+          "difference_percentage_points": 0.0023279016767296934,
+          "drop_percentage_points": 0.0023279016767296934
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "3b547568ec0173237184d0de2528530197279de795c8b1bf04327029b1f081c6",
+        "source_precision": "fp32",
+        "effective_precision": "fp32",
+        "graph_specialized": true,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s",
+        "task": "detect",
+        "weight": "models\\yolov8s\\yolov8s.pt",
+        "onnx": "models\\yolov8s\\yolov8s.onnx",
+        "weight_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "onnx_sha256": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:20:26.219412+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "detect",
+          "head": "Detect",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s.pt",
+        "official_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 30.42199999999866
+    },
+    {
+      "case": {
+        "id": "yolov8s-pose-fp32-specialized",
+        "model": "yolov8s-pose",
+        "precision": "fp32",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.556689205543805,
+          "official_ap": 0.5567218502652078,
+          "difference_percentage_points": 0.003264472140285246,
+          "drop_percentage_points": 0.003264472140285246
+        },
+        "keypoints": {
+          "engine_ap": 0.5986969606597747,
+          "official_ap": 0.5987172224357178,
+          "difference_percentage_points": 0.002026177594305345,
+          "drop_percentage_points": 0.002026177594305345
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "9ad9b0bc52e7d79148182e0c2f45e62408549834d568168aa0ebc990679eec9c",
+      "prepared_model": {
+        "sha256": "4d92efaad26e1f3b189c8d4ed04f39a98fc2fd0dabbc5dfadf78b5ea84b56f23",
+        "source_precision": "fp32",
+        "effective_precision": "fp32",
+        "graph_specialized": true,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s-pose",
+        "task": "pose",
+        "weight": "models\\yolov8s-pose\\yolov8s-pose.pt",
+        "onnx": "models\\yolov8s-pose\\yolov8s-pose.onnx",
+        "weight_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "onnx_sha256": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-pose model trained on /usr/src/app/ultralytics/datasets/coco-pose.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:35:22.096822+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "pose",
+          "head": "Pose",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False",
+          "kpt_shape": "[17, 3]"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-pose.pt",
+        "official_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 38.06199999999808
+    },
+    {
+      "case": {
+        "id": "yolov8s-seg-fp32-specialized",
+        "model": "yolov8s-seg",
+        "precision": "fp32",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.4577392440865713,
+          "official_ap": 0.45760646310016007,
+          "difference_percentage_points": 0.013278098641122948,
+          "drop_percentage_points": 0.0
+        },
+        "segm": {
+          "engine_ap": 0.369190725318421,
+          "official_ap": 0.36884668539237575,
+          "difference_percentage_points": 0.03440399260452587,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "9cc4243a86f8c50eb3978d309ef8421262f4dcfc057ecd1d60d2ca24ecdadffb",
+        "source_precision": "fp32",
+        "effective_precision": "fp32",
+        "graph_specialized": true,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s-seg",
+        "task": "segment",
+        "weight": "models\\yolov8s-seg\\yolov8s-seg.pt",
+        "onnx": "models\\yolov8s-seg\\yolov8s-seg.onnx",
+        "weight_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "onnx_sha256": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-seg model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:49:44.237595+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "segment",
+          "head": "Segment",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          },
+          {
+            "name": "output1",
+            "shape": [
+              "batch",
+              32,
+              "mask_height",
+              "mask_width"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-seg.pt",
+        "official_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 110.68700000000172
+    },
+    {
+      "case": {
+        "id": "yolov8s-fp32-graph",
+        "model": "yolov8s",
+        "precision": "fp32",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": true,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.46121750691310914,
+          "official_ap": 0.46124078592987644,
+          "difference_percentage_points": 0.0023279016767296934,
+          "drop_percentage_points": 0.0023279016767296934
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "3b547568ec0173237184d0de2528530197279de795c8b1bf04327029b1f081c6",
+        "source_precision": "fp32",
+        "effective_precision": "fp32",
+        "graph_specialized": true,
+        "cuda_graph": true
+      },
+      "model": {
+        "model": "yolov8s",
+        "task": "detect",
+        "weight": "models\\yolov8s\\yolov8s.pt",
+        "onnx": "models\\yolov8s\\yolov8s.onnx",
+        "weight_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "onnx_sha256": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:20:26.219412+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "detect",
+          "head": "Detect",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s.pt",
+        "official_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 30.15700000000288
+    },
+    {
+      "case": {
+        "id": "yolov8s-pose-fp32-graph",
+        "model": "yolov8s-pose",
+        "precision": "fp32",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": true,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.556689205543805,
+          "official_ap": 0.5567218502652078,
+          "difference_percentage_points": 0.003264472140285246,
+          "drop_percentage_points": 0.003264472140285246
+        },
+        "keypoints": {
+          "engine_ap": 0.5986969606597747,
+          "official_ap": 0.5987172224357178,
+          "difference_percentage_points": 0.002026177594305345,
+          "drop_percentage_points": 0.002026177594305345
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "9ad9b0bc52e7d79148182e0c2f45e62408549834d568168aa0ebc990679eec9c",
+      "prepared_model": {
+        "sha256": "4d92efaad26e1f3b189c8d4ed04f39a98fc2fd0dabbc5dfadf78b5ea84b56f23",
+        "source_precision": "fp32",
+        "effective_precision": "fp32",
+        "graph_specialized": true,
+        "cuda_graph": true
+      },
+      "model": {
+        "model": "yolov8s-pose",
+        "task": "pose",
+        "weight": "models\\yolov8s-pose\\yolov8s-pose.pt",
+        "onnx": "models\\yolov8s-pose\\yolov8s-pose.onnx",
+        "weight_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "onnx_sha256": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-pose model trained on /usr/src/app/ultralytics/datasets/coco-pose.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:35:22.096822+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "pose",
+          "head": "Pose",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False",
+          "kpt_shape": "[17, 3]"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-pose.pt",
+        "official_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 37.375
+    },
+    {
+      "case": {
+        "id": "yolov8s-seg-fp32-graph",
+        "model": "yolov8s-seg",
+        "precision": "fp32",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": true,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.4577392440865713,
+          "official_ap": 0.45760646310016007,
+          "difference_percentage_points": 0.013278098641122948,
+          "drop_percentage_points": 0.0
+        },
+        "segm": {
+          "engine_ap": 0.369190725318421,
+          "official_ap": 0.36884668539237575,
+          "difference_percentage_points": 0.03440399260452587,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "9cc4243a86f8c50eb3978d309ef8421262f4dcfc057ecd1d60d2ca24ecdadffb",
+        "source_precision": "fp32",
+        "effective_precision": "fp32",
+        "graph_specialized": true,
+        "cuda_graph": true
+      },
+      "model": {
+        "model": "yolov8s-seg",
+        "task": "segment",
+        "weight": "models\\yolov8s-seg\\yolov8s-seg.pt",
+        "onnx": "models\\yolov8s-seg\\yolov8s-seg.onnx",
+        "weight_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "onnx_sha256": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-seg model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:49:44.237595+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "segment",
+          "head": "Segment",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          },
+          {
+            "name": "output1",
+            "shape": [
+              "batch",
+              32,
+              "mask_height",
+              "mask_width"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-seg.pt",
+        "official_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 110.03099999999904
+    },
+    {
+      "case": {
+        "id": "yolov8s-fp16-off",
+        "model": "yolov8s",
+        "precision": "fp16",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "off",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.4611781369601506,
+          "official_ap": 0.46124078592987644,
+          "difference_percentage_points": 0.006264896972585365,
+          "drop_percentage_points": 0.006264896972585365
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "f96d251aaa528915ecacdeecc7111840afab5b7c63aa8fd0d0f509c7686f6e6d",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "graph_specialized": false,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s",
+        "task": "detect",
+        "weight": "models\\yolov8s\\yolov8s.pt",
+        "onnx": "models\\yolov8s\\yolov8s.onnx",
+        "weight_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "onnx_sha256": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:20:26.219412+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "detect",
+          "head": "Detect",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s.pt",
+        "official_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 30.93800000000192
+    },
+    {
+      "case": {
+        "id": "yolov8s-pose-fp16-off",
+        "model": "yolov8s-pose",
+        "precision": "fp16",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "off",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.5560696399673727,
+          "official_ap": 0.5567218502652078,
+          "difference_percentage_points": 0.06522102978351318,
+          "drop_percentage_points": 0.06522102978351318
+        },
+        "keypoints": {
+          "engine_ap": 0.5987818724407743,
+          "official_ap": 0.5987172224357178,
+          "difference_percentage_points": 0.00646500050565102,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "9ad9b0bc52e7d79148182e0c2f45e62408549834d568168aa0ebc990679eec9c",
+      "prepared_model": {
+        "sha256": "cf1f59b3aa5197bde9bebcdf4c1910d1fe5ed8b937e80664be406ded641fa43c",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "graph_specialized": false,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s-pose",
+        "task": "pose",
+        "weight": "models\\yolov8s-pose\\yolov8s-pose.pt",
+        "onnx": "models\\yolov8s-pose\\yolov8s-pose.onnx",
+        "weight_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "onnx_sha256": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-pose model trained on /usr/src/app/ultralytics/datasets/coco-pose.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:35:22.096822+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "pose",
+          "head": "Pose",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False",
+          "kpt_shape": "[17, 3]"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-pose.pt",
+        "official_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 39.10899999999674
+    },
+    {
+      "case": {
+        "id": "yolov8s-seg-fp16-off",
+        "model": "yolov8s-seg",
+        "precision": "fp16",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "off",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.45670691102164196,
+          "official_ap": 0.45760646310016007,
+          "difference_percentage_points": 0.08995520785181066,
+          "drop_percentage_points": 0.08995520785181066
+        },
+        "segm": {
+          "engine_ap": 0.36925232480291775,
+          "official_ap": 0.36884668539237575,
+          "difference_percentage_points": 0.04056394105420025,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "ef2b017e6d41ea27c80169bb9fe3f52a419a9175fa31455af1eec9cbe0880871",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "graph_specialized": false,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s-seg",
+        "task": "segment",
+        "weight": "models\\yolov8s-seg\\yolov8s-seg.pt",
+        "onnx": "models\\yolov8s-seg\\yolov8s-seg.onnx",
+        "weight_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "onnx_sha256": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-seg model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:49:44.237595+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "segment",
+          "head": "Segment",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          },
+          {
+            "name": "output1",
+            "shape": [
+              "batch",
+              32,
+              "mask_height",
+              "mask_width"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-seg.pt",
+        "official_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 112.84299999999712
+    },
+    {
+      "case": {
+        "id": "yolov8s-fp16-specialized",
+        "model": "yolov8s",
+        "precision": "fp16",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.4611781369601506,
+          "official_ap": 0.46124078592987644,
+          "difference_percentage_points": 0.006264896972585365,
+          "drop_percentage_points": 0.006264896972585365
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "9c78f146ba293e93165625856df380c67a50ec6104b337b8a18d3c1f78b6ad69",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "graph_specialized": true,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s",
+        "task": "detect",
+        "weight": "models\\yolov8s\\yolov8s.pt",
+        "onnx": "models\\yolov8s\\yolov8s.onnx",
+        "weight_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "onnx_sha256": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:20:26.219412+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "detect",
+          "head": "Detect",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s.pt",
+        "official_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 29.64100000000326
+    },
+    {
+      "case": {
+        "id": "yolov8s-pose-fp16-specialized",
+        "model": "yolov8s-pose",
+        "precision": "fp16",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.5560696399673727,
+          "official_ap": 0.5567218502652078,
+          "difference_percentage_points": 0.06522102978351318,
+          "drop_percentage_points": 0.06522102978351318
+        },
+        "keypoints": {
+          "engine_ap": 0.5987818724407743,
+          "official_ap": 0.5987172224357178,
+          "difference_percentage_points": 0.00646500050565102,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "9ad9b0bc52e7d79148182e0c2f45e62408549834d568168aa0ebc990679eec9c",
+      "prepared_model": {
+        "sha256": "7b6316fa2041c9debb97e2857e8fc1796cafc18890602e7e226565e23761e767",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "graph_specialized": true,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s-pose",
+        "task": "pose",
+        "weight": "models\\yolov8s-pose\\yolov8s-pose.pt",
+        "onnx": "models\\yolov8s-pose\\yolov8s-pose.onnx",
+        "weight_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "onnx_sha256": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-pose model trained on /usr/src/app/ultralytics/datasets/coco-pose.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:35:22.096822+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "pose",
+          "head": "Pose",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False",
+          "kpt_shape": "[17, 3]"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-pose.pt",
+        "official_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 36.85899999999674
+    },
+    {
+      "case": {
+        "id": "yolov8s-seg-fp16-specialized",
+        "model": "yolov8s-seg",
+        "precision": "fp16",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": false,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.45670691102164196,
+          "official_ap": 0.45760646310016007,
+          "difference_percentage_points": 0.08995520785181066,
+          "drop_percentage_points": 0.08995520785181066
+        },
+        "segm": {
+          "engine_ap": 0.36925232480291775,
+          "official_ap": 0.36884668539237575,
+          "difference_percentage_points": 0.04056394105420025,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "703360854a71ed3a4a920bbf3393a519bc2c6b3d2beee79a13216d455ca8e597",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "graph_specialized": true,
+        "cuda_graph": false
+      },
+      "model": {
+        "model": "yolov8s-seg",
+        "task": "segment",
+        "weight": "models\\yolov8s-seg\\yolov8s-seg.pt",
+        "onnx": "models\\yolov8s-seg\\yolov8s-seg.onnx",
+        "weight_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "onnx_sha256": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-seg model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:49:44.237595+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "segment",
+          "head": "Segment",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          },
+          {
+            "name": "output1",
+            "shape": [
+              "batch",
+              32,
+              "mask_height",
+              "mask_width"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-seg.pt",
+        "official_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 111.1720000000023
+    },
+    {
+      "case": {
+        "id": "yolov8s-fp16-graph",
+        "model": "yolov8s",
+        "precision": "fp16",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": true,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.4611781369601506,
+          "official_ap": 0.46124078592987644,
+          "difference_percentage_points": 0.006264896972585365,
+          "drop_percentage_points": 0.006264896972585365
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "9c78f146ba293e93165625856df380c67a50ec6104b337b8a18d3c1f78b6ad69",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "graph_specialized": true,
+        "cuda_graph": true
+      },
+      "model": {
+        "model": "yolov8s",
+        "task": "detect",
+        "weight": "models\\yolov8s\\yolov8s.pt",
+        "onnx": "models\\yolov8s\\yolov8s.onnx",
+        "weight_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "onnx_sha256": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:20:26.219412+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "detect",
+          "head": "Detect",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s.pt",
+        "official_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 29.40599999999904
+    },
+    {
+      "case": {
+        "id": "yolov8s-pose-fp16-graph",
+        "model": "yolov8s-pose",
+        "precision": "fp16",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": true,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.5560696399673727,
+          "official_ap": 0.5567218502652078,
+          "difference_percentage_points": 0.06522102978351318,
+          "drop_percentage_points": 0.06522102978351318
+        },
+        "keypoints": {
+          "engine_ap": 0.5987818724407743,
+          "official_ap": 0.5987172224357178,
+          "difference_percentage_points": 0.00646500050565102,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "9ad9b0bc52e7d79148182e0c2f45e62408549834d568168aa0ebc990679eec9c",
+      "prepared_model": {
+        "sha256": "7b6316fa2041c9debb97e2857e8fc1796cafc18890602e7e226565e23761e767",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "graph_specialized": true,
+        "cuda_graph": true
+      },
+      "model": {
+        "model": "yolov8s-pose",
+        "task": "pose",
+        "weight": "models\\yolov8s-pose\\yolov8s-pose.pt",
+        "onnx": "models\\yolov8s-pose\\yolov8s-pose.onnx",
+        "weight_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "onnx_sha256": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-pose model trained on /usr/src/app/ultralytics/datasets/coco-pose.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:35:22.096822+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "pose",
+          "head": "Pose",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False",
+          "kpt_shape": "[17, 3]"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-pose.pt",
+        "official_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 36.76599999999962
+    },
+    {
+      "case": {
+        "id": "yolov8s-seg-fp16-graph",
+        "model": "yolov8s-seg",
+        "precision": "fp16",
+        "imgsz": [
+          640,
+          640
+        ],
+        "limit": 500,
+        "graph_specialization": "auto",
+        "cuda_graph": true,
+        "build_fingerprint": "a98a4054be3b4804005df062a6415727c34b81c7d76267001f3226b19d897b9a",
+        "conversion_fingerprint": "0ee5e15b2cf29b92e0c6c4630daac0aba93d2450762e76a07aa80e0aad1d0305",
+        "model_hash": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e"
+      },
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.45670691102164196,
+          "official_ap": 0.45760646310016007,
+          "difference_percentage_points": 0.08995520785181066,
+          "drop_percentage_points": 0.08995520785181066
+        },
+        "segm": {
+          "engine_ap": 0.36925232480291775,
+          "official_ap": 0.36884668539237575,
+          "difference_percentage_points": 0.04056394105420025,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "images": 500,
+      "image_ids_sha256": "57594aacc9378293e30f57acc00b8a9a0720b2d6e6b963bc58c1aa03ec926930",
+      "prepared_model": {
+        "sha256": "703360854a71ed3a4a920bbf3393a519bc2c6b3d2beee79a13216d455ca8e597",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "graph_specialized": true,
+        "cuda_graph": true
+      },
+      "model": {
+        "model": "yolov8s-seg",
+        "task": "segment",
+        "weight": "models\\yolov8s-seg\\yolov8s-seg.pt",
+        "onnx": "models\\yolov8s-seg\\yolov8s-seg.onnx",
+        "weight_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "onnx_sha256": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e",
+        "metadata": {
+          "description": "Ultralytics YOLOv8s-seg model trained on coco.yaml",
+          "author": "Ultralytics",
+          "date": "2026-10-11T20:49:44.237595+08:00",
+          "version": "8.4.115",
+          "license": "AGPL-3.0 License (https://ultralytics.com/license)",
+          "docs": "https://docs.ultralytics.com",
+          "stride": "32",
+          "task": "segment",
+          "head": "Segment",
+          "batch": "1",
+          "imgsz": "[640, 640]",
+          "names": "{0: 'person', 1: 'bicycle', 2: 'car', 3: 'motorcycle', 4: 'airplane', 5: 'bus', 6: 'train', 7: 'truck', 8: 'boat', 9: 'traffic light', 10: 'fire hydrant', 11: 'stop sign', 12: 'parking meter', 13: 'bench', 14: 'bird', 15: 'cat', 16: 'dog', 17: 'horse', 18: 'sheep', 19: 'cow', 20: 'elephant', 21: 'bear', 22: 'zebra', 23: 'giraffe', 24: 'backpack', 25: 'umbrella', 26: 'handbag', 27: 'tie', 28: 'suitcase', 29: 'frisbee', 30: 'skis', 31: 'snowboard', 32: 'sports ball', 33: 'kite', 34: 'baseball bat', 35: 'baseball glove', 36: 'skateboard', 37: 'surfboard', 38: 'tennis racket', 39: 'bottle', 40: 'wine glass', 41: 'cup', 42: 'fork', 43: 'knife', 44: 'spoon', 45: 'bowl', 46: 'banana', 47: 'apple', 48: 'sandwich', 49: 'orange', 50: 'broccoli', 51: 'carrot', 52: 'hot dog', 53: 'pizza', 54: 'donut', 55: 'cake', 56: 'chair', 57: 'couch', 58: 'potted plant', 59: 'bed', 60: 'dining table', 61: 'toilet', 62: 'tv', 63: 'laptop', 64: 'mouse', 65: 'remote', 66: 'keyboard', 67: 'cell phone', 68: 'microwave', 69: 'oven', 70: 'toaster', 71: 'sink', 72: 'refrigerator', 73: 'book', 74: 'clock', 75: 'vase', 76: 'scissors', 77: 'teddy bear', 78: 'hair drier', 79: 'toothbrush'}",
+          "args": "{'data': None, 'batch': 1, 'fraction': 1.0, 'quantize': None, 'dynamic': True, 'simplify': False, 'opset': 17, 'nms': False}",
+          "channels": "3",
+          "end2end": "False"
+        },
+        "outputs": [
+          {
+            "name": "output0",
+            "shape": [
+              "batch",
+              "Concatoutput0_dim_1",
+              "anchors"
+            ],
+            "type": 1
+          },
+          {
+            "name": "output1",
+            "shape": [
+              "batch",
+              32,
+              "mask_height",
+              "mask_width"
+            ],
+            "type": 1
+          }
+        ],
+        "opset": 17,
+        "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8s-seg.pt",
+        "official_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+        "export": {
+          "imgsz": 640,
+          "batch": 1,
+          "dynamic": true,
+          "nms": false,
+          "half": false,
+          "simplify": false
+        },
+        "environment": {
+          "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+          "platform": "Windows-10-10.0.19045-SP0",
+          "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+          "versions": {
+            "ultralytics": "8.4.115",
+            "onnx": "1.22.0",
+            "onnxruntime-gpu": "1.28.0",
+            "torch": "2.13.0+cu126",
+            "numpy": "2.5.1",
+            "opencv-python": "5.0.0.93",
+            "pycocotools": "2.0.11"
+          }
+        }
+      },
+      "elapsed_seconds": 111.03100000000268
+    }
+  ]
+}

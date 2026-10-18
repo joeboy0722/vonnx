@@ -91,7 +91,8 @@ inline std::wstring win_quote(const std::wstring& text) {
     out.append(slashes*2,L'\\'); return out+L'"';
 }
 inline std::string convert_precision(const std::string& path,const std::string& cache,
-                                      const std::string& python,const std::string& tool) {
+                                      const std::string& python,const std::string& tool,
+                                      int height=0,int width=0,int batch=0,bool fp16=true) {
     wchar_t temp[MAX_PATH],response[MAX_PATH];
     if(!GetTempPathW(MAX_PATH,temp)||!GetTempFileNameW(temp,L"vfp",0,response))
         throw std::runtime_error("Cannot create precision conversion response file");
@@ -104,24 +105,28 @@ inline std::string convert_precision(const std::string& path,const std::string& 
         GetModuleFileNameW(module,name,32768);
         helper=std::filesystem::path(name).parent_path()/L"precision.py";
     }
-    if(!std::filesystem::is_regular_file(helper)) throw std::runtime_error("FP16 conversion requires precision.py next to the module, or precision_tool");
+    if(!std::filesystem::is_regular_file(helper)) throw std::runtime_error("Model preparation requires precision.py next to the module, or precision_tool");
     std::wstring exe=python.empty()?L"python.exe":std::filesystem::u8path(python).wstring();
     std::wstring cmd=win_quote(exe)+L" "+win_quote(helper.wstring())+L" "+win_quote(std::filesystem::u8path(path).wstring())+L" "+win_quote(response);
     if(!cache.empty()) cmd+=L" --cache-dir "+win_quote(std::filesystem::u8path(cache).wstring());
+    if(height || width) cmd+=L" --shape "+std::to_wstring(height)+L" "+std::to_wstring(width)+
+                             L" --fixed-batch "+std::to_wstring(batch);
+    if(!fp16) cmd+=L" --no-fp16";
     STARTUPINFOW si{};si.cb=sizeof(si); PROCESS_INFORMATION pi{};
     if(!CreateProcessW(nullptr,cmd.data(),nullptr,nullptr,FALSE,CREATE_NO_WINDOW,nullptr,nullptr,&si,&pi))
-        throw std::runtime_error("Cannot start Python FP16 converter; set precision_python to an interpreter with onnx and onnxruntime");
+        throw std::runtime_error("Cannot start model preparation; set precision_python to an interpreter with onnx and onnxruntime");
     CloseHandle(pi.hThread);
     auto wait=WaitForSingleObject(pi.hProcess,180000);
-    if(wait!=WAIT_OBJECT_0) {TerminateProcess(pi.hProcess,1);WaitForSingleObject(pi.hProcess,5000);CloseHandle(pi.hProcess);throw std::runtime_error("FP16 conversion timed out");}
+    if(wait!=WAIT_OBJECT_0) {TerminateProcess(pi.hProcess,1);WaitForSingleObject(pi.hProcess,5000);CloseHandle(pi.hProcess);throw std::runtime_error("Model preparation timed out");}
     DWORD exit{};GetExitCodeProcess(pi.hProcess,&exit);CloseHandle(pi.hProcess);
     std::ifstream result(response,std::ios::binary);
     std::string value((std::istreambuf_iterator<char>(result)),{});
-    if(exit || value.empty() || value.rfind("ERROR: ",0)==0) throw std::runtime_error("FP16 conversion failed: "+value);
+    if(exit || value.empty() || value.rfind("ERROR: ",0)==0) throw std::runtime_error("Model preparation failed: "+value);
     return value;
 }
 #else
-inline std::string convert_precision(const std::string&,const std::string&,const std::string&,const std::string&) {
+inline std::string convert_precision(const std::string&,const std::string&,const std::string&,const std::string&,
+                                     int=0,int=0,int=0,bool=true) {
     throw std::runtime_error("Native automatic FP16 conversion currently supports Windows only");
 }
 #endif

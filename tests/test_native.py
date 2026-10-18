@@ -236,6 +236,59 @@ class NativeTests(unittest.TestCase):
         finally:
             e.close()
 
+    def test_submit_copy_races_pause_and_close(self):
+        import concurrent.futures
+        import threading
+        image=np.full((1080,1920,3),71,np.uint8)
+        e=self.make(capture_debug=False,max_input_width=1920,max_input_height=1080,
+                    concurrency=16,pipeline_depth=2,max_latency_ms=0)
+        try:
+            initial=e.resource_stats
+            for cycle in range(6):
+                accepted=[];rejected=[];lock=threading.Lock();barrier=threading.Barrier(9)
+                def producer(lane):
+                    barrier.wait()
+                    try:
+                        f=e.submit_numpy(lane,cycle*100+lane,image,PixelFormat.RGB24)
+                        with lock:accepted.append((lane,f))
+                    except RuntimeError as error:
+                        with lock:rejected.append(str(error))
+                with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+                    tasks=[pool.submit(producer,i) for i in range(8)]
+                    # Ensure this iteration also exercises draining an accepted request.
+                    accepted.append((99,e.submit_numpy(99,cycle*100+99,image,PixelFormat.RGB24)))
+                    barrier.wait()
+                    if cycle==5:e.close()
+                    else:e.pause()
+                    for task in tasks:task.result(timeout=10)
+                for lane,f in accepted:
+                    r=f.result(timeout=.1)[0]
+                    self.assertEqual((r.stream_id,r.frame_id),(lane,cycle*100+lane))
+                self.assertEqual(len(accepted)+len(rejected),9)
+                self.assertTrue(all(any(x in s.lower() for x in ('paused','stopped','closed')) for s in rejected))
+                if cycle<5:
+                    self.assertEqual(e.resource_stats.state,'paused')
+                    e.resume()
+                    self.assertEqual(e.resource_stats.explicit_device_allocations,initial.explicit_device_allocations)
+                    self.assertEqual(e.resource_stats.hot_path_device_allocations,0)
+            self.assertEqual(e.resource_stats.state,'closed')
+        finally:e.close()
+
+    def test_diagnostic_trace_is_additive_and_monotonic(self):
+        image=np.zeros((32,32,3),np.uint8)
+        for enabled in (False,True):
+            e=self.make(capture_debug=False,collect_timings=enabled)
+            try:
+                r=e.predict_numpy(3,7,image,PixelFormat.RGB24)[0]
+                if not enabled:self.assertEqual(r.diagnostic_trace,{});continue
+                names=('api_entry','admitted','copy_done','enqueued','dequeued','slot_ready',
+                       'compute_begin','ort_enter','ort_exit','d2h_ready','cpu_ready','future_publish')
+                values=[r.diagnostic_trace[n] for n in names]
+                self.assertEqual(values[0],0)
+                self.assertEqual(values,sorted(values))
+                self.assertGreater(r.inference_ms,0)
+            finally:e.close()
+
     def test_concurrency_budget_and_optional_timings(self):
         image = np.zeros((32, 32, 3), np.uint8)
         e = self.make(concurrency=1, max_latency_ms=1000, capture_debug=False)

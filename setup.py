@@ -178,7 +178,7 @@ class CUDABuildExt(build_ext):
 
 setup(
     name="vonnx",
-    version="0.4.0",
+    version="0.5.0",
     author="vONNX contributors",
     description="Resident CUDA/ONNX Runtime YOLOv8 inference with automatic FP16 preparation",
     license="MIT",

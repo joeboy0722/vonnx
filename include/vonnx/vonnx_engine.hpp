@@ -10,6 +10,8 @@ struct EngineConfig {
     std::string model_path;
     std::string precision{"auto"}, model_cache_dir, precision_python, precision_tool;
     std::string batch_shape_policy{"auto"}; // auto: FP16 throughput pads; FP32/latency stay dynamic
+    std::string graph_specialization{"off"}; // opt-in initialization-only shape preparation
+    bool cuda_graph{false}; // opt-in, requires specialization and a fixed execution batch
     size_t max_batch_size{8};
     double max_latency_ms{-1.0};
     std::string batch_mode{"throughput"};
@@ -72,6 +74,7 @@ class vONNXEngine {
     std::atomic<bool> running_{false};
     std::atomic<bool> paused_dispatch_{false};
     bool started_{false};
+    size_t submitting_{}; // Includes accepted calls still copying/publishing input.
     bool paused_{false}, terminal_{false}, closed_{false}, transitioning_{false};
     std::condition_variable lifecycle_cv_;
     mutable std::mutex lifecycle_;

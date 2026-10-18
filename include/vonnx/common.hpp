@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <map>
 
 // CUDA 錯誤檢查巨集
 #define CUDA_CHECK(call)                                                                                     \
@@ -60,6 +61,9 @@ struct DetectionResult {
     double batch_wait_ms{0}, dispatch_ms{0};
     std::vector<float> debug_input;
     std::vector<std::vector<float>> debug_outputs;
+    // Diagnostic schema v2, milliseconds relative to this request's API entry.
+    // Empty when collect_timings is false; existing interval fields are unchanged.
+    std::map<std::string, double> diagnostic_trace;
 };
 
 // 傳入 vONNX 的非同步影像資料包

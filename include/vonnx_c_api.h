@@ -109,6 +109,23 @@ VONNX_API void vonnx_config_init_v3(vonnx_config_v3 *);
 VONNX_API vonnx_engine_handle_t vonnx_create_engine_v3(const vonnx_config_v3 *);
 VONNX_API int vonnx_model_info_get_v3(vonnx_engine_handle_t, vonnx_model_info_v3 *);
 VONNX_API int vonnx_result_physical_batch_v3(const vonnx_result_v1 *);
+/* v4: opt-in graph specialization. Retains all v1/v2/v3 layouts. */
+typedef struct {
+    uint32_t version, struct_size;
+    vonnx_config_v3 base;
+    int graph_specialization; /* 0=off (default), 1=auto */
+    int cuda_graph; /* 0=off (default), 1=on; auto specialization + fixed execution batch required */
+} vonnx_config_v4;
+typedef struct {
+    uint32_t version, struct_size;
+    int graph_specialized;
+    int64_t source_input_shape[4], execution_input_shape[4]; /* -1=dynamic */
+    char source_model_sha256[65], prepared_model_sha256[65]; /* empty if not specialized */
+    int cuda_graph;
+} vonnx_model_info_v4;
+VONNX_API void vonnx_config_init_v4(vonnx_config_v4 *);
+VONNX_API vonnx_engine_handle_t vonnx_create_engine_v4(const vonnx_config_v4 *);
+VONNX_API int vonnx_model_info_get_v4(vonnx_engine_handle_t, vonnx_model_info_v4 *);
 #ifdef __cplusplus
 }
 #endif

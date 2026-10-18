@@ -304,7 +304,13 @@ def full_case(case, output):
         # Use the same deterministic subset at every resolution and model scale.
         paths = sorted(np.random.default_rng(20261011).permutation(paths)[:limited])
     # AP evaluation submits sequentially: do not pad one image to a throughput batch.
-    eng = engine(case["model"], shape, batch=1, conf=0.001, precision=case.get("precision","auto"))
+    eng = engine(case["model"], shape, batch=1, conf=0.001, precision=case.get("precision","auto"),
+                 graph_specialization=case.get("graph_specialization", "off"),
+                 cuda_graph=case.get("cuda_graph", False))
+    spec = eng.model_spec
+    prepared = dict(sha256=sha256(spec.prepared_model_path),
+                    source_precision=spec.source_precision, effective_precision=spec.effective_precision,
+                    graph_specialized=spec.graph_specialized, cuda_graph=spec.cuda_graph)
     official = YOLO(str(ROOT / info["weight"]))
     official.to("cuda")
     official.model.float()
@@ -368,6 +374,7 @@ def full_case(case, output):
         "limited": bool(limited),
         "sample_seed": 20261011 if limited else None,
         "image_ids": image_ids,
+        "prepared_model": prepared,
     }
 
 

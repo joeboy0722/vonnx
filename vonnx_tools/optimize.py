@@ -161,6 +161,8 @@ def native(case, rgb):
     from vonnx import EngineConfig, vONNXEngine
 
     c = EngineConfig()
+    if hasattr(c,'graph_specialization'):c.graph_specialization=case.get('graph_specialization','off')
+    if hasattr(c,'cuda_graph'):c.cuda_graph=case.get('cuda_graph',False)
     c.model_path = str(ROOT / manifest(case["model"])["onnx"])
     c.imgsz = 640
     if hasattr(c,"precision"):
@@ -242,12 +244,18 @@ def run(case, output):
         logs, errors = [], []
         barrier = threading.Barrier(case["lanes"] + 1)
         lock = threading.Lock()
+        issued = [0]
 
         def lane_work(lane):
             barrier.wait()
-            count = (case["total"] - 25) // case["lanes"] + int(lane < (case["total"] - 25) % case["lanes"])
-            for n in range(count):
-                frame = 25 + lane + n * case["lanes"]
+            while True:
+                # Keep every producer eligible until the common request quota
+                # is issued. Per-lane quotas prematurely drained fast lanes and
+                # could turn the same 75 requests into 10 or 11 padded B8 runs.
+                with lock:
+                    if issued[0] >= case['total']-25:break
+                    frame=25+issued[0]
+                    issued[0]+=1
                 begin = time.perf_counter()
                 try:
                     f = submit(lane, frame)
@@ -258,6 +266,8 @@ def run(case, output):
                         row = {
                             k: getattr(r, k, None) for k in ("batch_size", "physical_batch_size", "stream_id", "frame_id", *STAGES)
                         }
+                        if case["timings"] and hasattr(r,"diagnostic_trace"):
+                            row["diagnostic_trace"]=r.diagnostic_trace
                     else:
                         row = {k: r.get(k) for k in ("batch_size", "physical_batch_size", "stream_id", "frame_id", *STAGES)}
                     row['physical_batch_size']=row.get('physical_batch_size') or row['batch_size']
@@ -326,6 +336,7 @@ def run(case, output):
             ),
             cpu_outputs_retained=True,
             effective_timings=case["timings"],
+            request_issuance="shared_quota_v2",
             effective_config=dict(
                 concurrency=max(32, case["lanes"]) if case["backend"] == "native" else None,
                 queue_capacity=1024 if case["backend"] in ("native", "before") else 32,

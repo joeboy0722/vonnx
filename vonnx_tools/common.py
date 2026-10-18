@@ -68,13 +68,18 @@ def manifest(model):
 
 def engine(
     model, imgsz, *, batch=16, conf=0.25, debug=False, full_masks=False, max_width=1920, max_height=1080,
-    precision="auto", model_path=None
+    precision="auto", model_path=None, graph_specialization="off", batch_shape_policy="auto",cuda_graph=False
 ):
     from vonnx import EngineConfig, vONNXEngine
 
     c = EngineConfig()
     c.model_path = str(model_path or ROOT / manifest(model)["onnx"])
     c.precision = precision
+    if hasattr(c,"graph_specialization"):c.graph_specialization=graph_specialization
+    elif graph_specialization!="off":raise RuntimeError("Binary does not support graph specialization")
+    c.batch_shape_policy=batch_shape_policy
+    if hasattr(c,'cuda_graph'):c.cuda_graph=cuda_graph
+    elif cuda_graph:raise RuntimeError('Binary does not support CUDA Graph')
     c.model_cache_dir = str(ROOT / "runs/fp16/cache")
     c.imgsz = imgsz
     c.max_batch_size = batch

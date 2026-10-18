@@ -8,6 +8,7 @@
 #include <future>
 #include <mutex>
 #include <thread>
+#include <array>
 namespace vonnx {
 using InferenceCallback = std::function<void(const std::vector<DetectionResult> &)>;
 struct PendingRequest {
@@ -16,6 +17,10 @@ struct PendingRequest {
     std::promise<std::vector<DetectionResult>> promise;
     InferenceCallback callback;
     std::chrono::steady_clock::time_point submitted;
+    bool ready{false}, trace_enabled{false};
+    enum TracePoint { ApiEntry, Admitted, CopyDone, Enqueued, Dequeued, SlotReady,
+                      ComputeBegin, OrtEnter, OrtExit, D2HReady, CpuReady, FuturePublish, TraceCount };
+    std::array<std::chrono::steady_clock::time_point, TraceCount> trace{};
     std::function<void()> release_input;
     void release() {
         if (release_input) {
@@ -35,9 +40,11 @@ struct BatchJob {
 class ContinuousScheduler {
   public:
     ContinuousScheduler(size_t max_batch_size, double max_latency_ms, size_t capacity = 1024,
-                        size_t concurrency = 0, uint8_t *staging = nullptr, size_t page_size = 0);
+                        size_t concurrency = 0, uint8_t *staging = nullptr, size_t page_size = 0,
+                        std::function<void(void*,const void*,size_t)> input_copier = {});
     ~ContinuousScheduler();
-    std::future<std::vector<DetectionResult>> submit_task(const FrameTask &, InferenceCallback = nullptr);
+    std::future<std::vector<DetectionResult>> submit_task(const FrameTask &, InferenceCallback = nullptr,
+        std::chrono::steady_clock::time_point api_entry = {});
     bool pop_batch(BatchJob &, int timeout_ms);
     size_t pending_count();
     void stop();
@@ -56,6 +63,7 @@ class ContinuousScheduler {
     size_t concurrency_{}, inflight_{}, page_size_{};
     uint8_t *staging_{};
     std::vector<size_t> free_inputs_;
+    std::function<void(void*,const void*,size_t)> input_copier_; // Injectable failure/barrier seam for native tests.
     DeadlineWaiter waiter_;
 };
 } // namespace vonnx

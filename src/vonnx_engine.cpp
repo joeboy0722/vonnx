@@ -52,8 +52,8 @@ vONNXEngine::vONNXEngine(const EngineConfig &config) : config_(config) {
     const bool converted=config_.precision=="fp16" && source_precision!="fp16";
     if(config_.batch_shape_policy!="auto" && config_.batch_shape_policy!="dynamic" && config_.batch_shape_policy!="fixed")
         throw std::invalid_argument("batch_shape_policy must be auto, dynamic or fixed");
-    if(converted) config_.model_path=convert_precision(config_.model_path,config_.model_cache_dir,
-                                                     config_.precision_python,config_.precision_tool);
+    if(config_.graph_specialization!="off" && config_.graph_specialization!="auto")
+        throw std::invalid_argument("graph_specialization must be off or auto");
     if (config_.batch_mode != "throughput" && config_.batch_mode != "latency")
         throw std::invalid_argument("Invalid batch_mode");
     if (config_.max_latency_ms == -1)
@@ -74,6 +74,15 @@ vONNXEngine::vONNXEngine(const EngineConfig &config) : config_(config) {
         throw std::invalid_argument("Size overflow");
     if (config_.max_gpu_pages && config_.max_gpu_pages < config_.max_batch_size)
         throw std::invalid_argument("max_gpu_pages must cover max_batch_size");
+    const bool fixed=config_.batch_shape_policy=="fixed" || (config_.batch_shape_policy=="auto" &&
+        (converted || source_precision!="fp32") && config_.batch_mode=="throughput");
+    const bool specialize=config_.graph_specialization=="auto";
+    const int physical_batch=(fixed || config_.max_batch_size==1)?int(config_.max_batch_size):0;
+    if(config_.cuda_graph && (!specialize || !physical_batch))
+        throw std::invalid_argument("cuda_graph requires graph_specialization=auto and a fixed execution batch");
+    if(converted || specialize) config_.model_path=convert_precision(config_.model_path,config_.model_cache_dir,
+        config_.precision_python,config_.precision_tool,specialize?config_.input_height:0,
+        specialize?config_.input_width:0,specialize?physical_batch:0,converted);
     CUDA_CHECK(cudaSetDevice(config_.gpu_id));
     size_t total{};
     CUDA_CHECK(cudaMemGetInfo(&baseline_free_, &total));
@@ -82,7 +91,8 @@ vONNXEngine::vONNXEngine(const EngineConfig &config) : config_(config) {
     download_stream_.create();
     runner_ = std::make_unique<ONNXRunner>(config_.model_path, config_.gpu_id, config_.input_width,
                                            config_.input_height, int(config_.max_batch_size), stream_.get(),
-                                           config_.gpu_memory_budget_mb*1024*1024, converted || source_precision!="fp32");
+                                           config_.gpu_memory_budget_mb*1024*1024, converted || source_precision!="fp32",
+                                           physical_batch,config_.cuda_graph);
     cached_spec_ = runner_->spec();
     cached_spec_.source_precision=source_precision;
     cached_spec_.effective_precision=converted?inspect_precision(config_.model_path):source_precision;
@@ -217,6 +227,7 @@ void vONNXEngine::pause() {
         return;
     paused_ = true;
     transitioning_ = true;
+    lifecycle_cv_.wait(lock, [&] {return submitting_==0;});
     lock.unlock();
     scheduler_->pause();
     paused_dispatch_ = true;
@@ -255,6 +266,7 @@ void vONNXEngine::stop() {
     terminal_ = true;
     paused_ = false;
     transitioning_ = true;
+    lifecycle_cv_.wait(lock, [&] {return submitting_==0;});
     lock.unlock();
     finish_threads(true);
     lock.lock();
@@ -343,12 +355,25 @@ size_t vONNXEngine::validate_input(const FrameTask &t) const {
 }
 std::future<std::vector<DetectionResult>> vONNXEngine::predict_async(const FrameTask &task,
                                                                      InferenceCallback cb) {
-    std::lock_guard<std::mutex> lock(lifecycle_);
-    if (closed_ || terminal_ || paused_)
-        throw std::runtime_error("Engine stopped/paused/closed; new requests rejected");
-    auto copy = task;
-    copy.data_size = validate_input(task);
-    return scheduler_->submit_task(copy, std::move(cb));
+    const auto entered=config_.collect_timings?std::chrono::steady_clock::now():std::chrono::steady_clock::time_point{};
+    {
+        std::lock_guard<std::mutex> lock(lifecycle_);
+        if (closed_ || terminal_ || paused_)
+            throw std::runtime_error("Engine stopped/paused/closed; new requests rejected");
+        ++submitting_;
+    }
+    auto finished=[&] {
+        std::lock_guard<std::mutex> lock(lifecycle_);
+        --submitting_;
+        lifecycle_cv_.notify_all();
+    };
+    try {
+        auto copy=task;
+        copy.data_size=validate_input(task);
+        auto future=scheduler_->submit_task(copy,std::move(cb),entered);
+        finished();
+        return future;
+    } catch(...) {finished();throw;}
 }
 std::vector<DetectionResult> vONNXEngine::predict_sync(const FrameTask &task) {
     return predict_async(task).get();
@@ -427,6 +452,10 @@ void vONNXEngine::upload_loop() {
             }
             {
                 std::lock_guard<std::mutex> lock(slots_mutex_);
+                if(config_.collect_timings) {
+                    const auto ready=std::chrono::steady_clock::now();
+                    for(auto &request:slot.job.requests) request->trace[PendingRequest::SlotReady]=ready;
+                }
                 ready_slots_.push_back(id);
             }
             slots_cv_.notify_all();
@@ -451,7 +480,8 @@ void vONNXEngine::worker_loop() {
         CUDA_CHECK(cudaSetDevice(config_.gpu_id));
         for (auto &slot : slots_)
             for (size_t batch = cached_spec_.fixed_batch_size?config_.max_batch_size:1; batch <= config_.max_batch_size; ++batch) {
-                runner_->run(slot->id, int(batch));
+                for(int repeat=0;repeat<(config_.cuda_graph?3:1);++repeat)
+                    runner_->run(slot->id, int(batch));
                 CUDA_CHECK(cudaStreamSynchronize(stream_.get()));
                 size_t available{}, total{};
                 CUDA_CHECK(cudaMemGetInfo(&available, &total));
@@ -521,6 +551,7 @@ void vONNXEngine::process_slot(Slot &slot) {
         r.frame_id = job.tasks[b].frame_id;
         r.batch_size = batch;
         r.physical_batch_size=s.fixed_batch_size?s.fixed_batch_size:batch;
+        if(config_.collect_timings) job.requests[b]->trace[PendingRequest::ComputeBegin]=slot.compute_begin;
         r.queue_ms =
             std::chrono::duration<double, std::milli>(job.dispatched - job.requests[b]->submitted).count();
         r.batch_wait_ms = std::min(r.queue_ms, job.batch_wait_ms);
@@ -539,7 +570,15 @@ void vONNXEngine::process_slot(Slot &slot) {
     pre.record(stream);
     float *outputs[] = {slot.prediction.get(), slot.prototype.get()};
     size_t output_count = s.task == "segment" ? 2 : 1;
+    if(config_.collect_timings) {
+        const auto now=std::chrono::steady_clock::now();
+        for(auto &request:job.requests) request->trace[PendingRequest::OrtEnter]=now;
+    }
     runner_->run(slot.id, physical);
+    if(config_.collect_timings) {
+        const auto now=std::chrono::steady_clock::now();
+        for(auto &request:job.requests) request->trace[PendingRequest::OrtExit]=now;
+    }
     if(slot.prediction16.get()) launch_from_half(slot.prediction16.get(),slot.prediction.get(),size_t(batch)*s.channels*s.anchors,stream);
     if(slot.prototype16.get()) launch_from_half(slot.prototype16.get(),slot.prototype.get(),size_t(batch)*s.mask_channels*s.mask_height*s.mask_width,stream);
     infer.record(stream);
@@ -567,6 +606,10 @@ void vONNXEngine::process_slot(Slot &slot) {
     }
     copied.record(download);
     CUDA_CHECK(cudaEventSynchronize(copied.get()));
+    if(config_.collect_timings) {
+        const auto now=std::chrono::steady_clock::now();
+        for(auto &request:job.requests) request->trace[PendingRequest::D2HReady]=now;
+    }
     auto &plans = slot.plans;
     plans.clear();
     size_t mask_bytes = 0;

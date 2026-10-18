@@ -9,11 +9,12 @@ from vonnx_tools.common import ROOT, manifest
 
 
 class Official1920:
-    def __init__(self, name):
+    def __init__(self, name, precision="fp32"):
         import torch
         from ultralytics import YOLO
 
         self.torch = torch
+        self.half = precision == "fp16"
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.backends.cudnn.allow_tf32 = False
         torch.backends.cudnn.benchmark = False
@@ -42,13 +43,15 @@ class Official1920:
                         np.ascontiguousarray(image[:, :, ::-1]),
                         imgsz=1920,
                         rect=False,
-                        half=False,
+                        half=self.half,
                         conf=0.25,
                         iou=0.7,
                         max_det=300,
-                        quantize=None,
+                        quantize=16 if self.half else None,
                         verbose=False,
                     )[0]
+                    if bool(self.model.predictor.model.fp16) != self.half:
+                        raise RuntimeError("Official backend precision does not match requested precision")
                     boxes = r.boxes.data.cpu().numpy()
                     keypoints = [] if r.keypoints is None else r.keypoints.data.cpu().numpy()
                     stream.synchronize()
