@@ -1,5 +1,6 @@
 import json
 import time
+import math
 from pathlib import Path
 import numpy as np
 from .common import (
@@ -12,6 +13,7 @@ from .common import (
     write_json,
     environment,
     build_fingerprint,
+    sha256,
 )
 
 
@@ -32,10 +34,24 @@ def box_iou(a, b):
     union = np.maximum(0, a[2:4] - a[:2]).prod() + np.maximum(0, b[2:4] - b[:2]).prod() - intersection
     return float(intersection / union) if union > 0 else 0.0
 
+def ap_comparison(actual, reference, precision):
+    if not all(math.isfinite(v) and 0<=v<=1 for v in (actual,reference)):
+        raise AssertionError('Invalid AP value')
+    difference=abs(actual-reference)
+    drop=max(0.,reference-actual)
+    if (drop if precision=='fp16' else difference) > .005+1e-12:
+        raise AssertionError('mAP '+('drop' if precision=='fp16' else 'difference')+' exceeds 0.5 percentage points')
+    return dict(engine_ap=actual,official_ap=reference,difference_percentage_points=difference*100,
+                drop_percentage_points=drop*100)
+
 
 def compare(actual, official, shape):
     got = box_array(actual)
     want = official.boxes.data.cpu().numpy()[:, :6]
+    if (official.keypoints is not None or actual.keypoints) and len(actual.keypoints)!=len(got):
+        raise AssertionError('Keypoint count does not match boxes')
+    if (official.masks is not None or actual.masks) and len(actual.masks)!=len(got):
+        raise AssertionError('Mask count does not match boxes')
     used = set()
     ambiguous = []
     max_coord = 0.0
@@ -109,6 +125,9 @@ def compare(actual, official, shape):
 
 
 def smoke_case(case):
+    if case.get("precision") == "fp16":
+        from .precision_check import smoke
+        return smoke(case)
     import torch
     import onnxruntime as ort
 
@@ -137,7 +156,7 @@ def smoke_case(case):
     max_pre = 0.0
     max_raw = 0.0
     for batch in case.get("batch_limits", (1, 2, 4)):
-        eng = engine(case["model"], shape, batch=batch, debug=True)
+        eng = engine(case["model"], shape, batch=batch, debug=True,precision=case.get("precision","auto"))
         try:
             for start in range(0, len(rgb), batch):
                 inputs = rgb[start : start + batch]
@@ -284,7 +303,8 @@ def full_case(case, output):
     if limited:
         # Use the same deterministic subset at every resolution and model scale.
         paths = sorted(np.random.default_rng(20261011).permutation(paths)[:limited])
-    eng = engine(case["model"], shape, conf=0.001)
+    # AP evaluation submits sequentially: do not pad one image to a throughput batch.
+    eng = engine(case["model"], shape, batch=1, conf=0.001, precision=case.get("precision","auto"))
     official = YOLO(str(ROOT / info["weight"]))
     official.to("cuda")
     official.model.float()
@@ -341,13 +361,7 @@ def full_case(case, output):
             evaluation.accumulate()
             evaluation.summarize()
             scores.append(float(evaluation.stats[0]))
-        metrics[kind] = {
-            "engine_ap": scores[0],
-            "official_ap": scores[1],
-            "difference_percentage_points": abs(scores[0] - scores[1]) * 100,
-        }
-        if abs(scores[0] - scores[1]) > 0.005:
-            raise AssertionError(f"{kind} mAP difference exceeds 0.5 percentage points")
+        metrics[kind] = ap_comparison(scores[0],scores[1],case.get('precision','auto'))
     return {
         "images": len(paths),
         "metrics": metrics,
@@ -378,13 +392,15 @@ def validate(args):
         for size in [*[[s, s] for s in args.sizes], *([[384, 640]] if not args.full else [])]:
             cases.append(
                 {
-                    "id": model + "-" + str(size[0]) + "x" + str(size[1]),
+                    "id": model + "-" + str(size[0]) + "x" + str(size[1]) + "-" + getattr(args,"precision","auto"),
                     "model": model,
+                    "precision": getattr(args,"precision","auto"),
                     "imgsz": size,
                     "full": args.full,
                     "limit": args.limit,
                     "model_hash": manifest(model)["onnx_sha256"],
                     "build_fingerprint": build_fingerprint(),
+                    "conversion_fingerprint":sha256(ROOT / "vonnx/precision.py"),
                 }
             )
     if args.case:

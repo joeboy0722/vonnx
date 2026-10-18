@@ -33,7 +33,7 @@ from .vonnx_py import (
     ResourceStats,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __all__ = [
     "vONNXEngine",
     "EngineConfig",

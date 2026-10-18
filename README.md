@@ -1,7 +1,9 @@
-# vONNX 0.3
+# vONNX 0.4.0
 
 以 C++17、CUDA 與 ONNX Runtime 建立的常駐 YOLOv8 推論引擎，支援 **Detect、Pose、Seg**。
 提供非同步請求、動態 ONNX 尺寸初始化、批次排程，以及 Python／C++／版本化 C API。
+新增 FP16：`config.precision = "fp16"` 可由引擎轉換 FP32 ONNX；
+預設 `auto` 保留來源精度。詳細限制與驗證指令見 [FP16 指南](docs/fp16.md)。
 目前主要驗證環境為 **Windows + RTX 3070 8GB**。
 
 預編譯 Windows x64 SDK／Python 3.12 wheel 見 [GitHub Releases](https://github.com/joeboy0722/vonnx/releases)。
@@ -63,6 +65,7 @@ config.max_batch_size = 8
 config.batch_mode = "throughput"   # 或 "latency"
 config.max_latency_ms = 2
 config.pipeline_depth = 2
+config.precision = "fp16"          # 預設 auto 保留來源精度
 
 engine = vONNXEngine(config)
 try:
@@ -78,7 +81,7 @@ finally:
 同步入口為 `predict_numpy()`。Pose 加入 `keypoints[box_index]`；Seg 預設提供
 `masks[box_index]` 的原圖 ROI `x/y/width/height` 與 uint8 `data`，可設定 `full_masks=True`。
 GPU 輸入須保留至完成，並提供實際 producer stream handle。
-C API v2、舊 v1 相容方式與 C++ 用法見 [架構與 API](docs/architecture.md)。
+C API v3 精度設定與 C++ 用法見 [發布包使用指南](docs/release.md)；v1／v2 保持相容。
 
 ## 初始化設定
 
@@ -91,10 +94,13 @@ C API v2、舊 v1 相容方式與 C++ 用法見 [架構與 API](docs/architectur
 | `pipeline_depth` | 自動 | 吞吐 2 槽／低延遲 1 槽；可指定 1 或 2 |
 | `gpu_memory_budget_mb` | 6144 | 引擎 buffers 與 ORT arena 預算，非整個裝置的硬限制 |
 | `collect_timings` | `False` | 需要詳細 CUDA 階段計時時才開啟 |
+| `precision` | `auto` | 辨識原精度；`fp16` 內部轉換，`fp32` 拒絕半精度來源 |
+| `batch_shape_policy` | `auto` | FP16 吞吐模式固定最大執行 batch 並補零；低延遲／FP32 保持動態 |
 
 推論尺寸、模型與容量在建立後固定，變更時須關閉並建立新引擎。
 Python 輸入須為連續 uint8 陣列；NV12 為 `[H*3/2, W]`。尺寸須為正值且符合 stride。
-目前以 FP32、NCHW、無內嵌 NMS 的 YOLOv8 原始 ONNX 輸出為支援範圍。
+支援 FP32／FP16 NCHW、無內嵌 NMS 的 YOLOv8 原始 ONNX 輸出。
+三種 s／640 的完整 AP 驗證已通過；其他模型與尺寸尚未取得同等準確度驗證。
 
 ## 驗證與跑分
 
@@ -117,8 +123,10 @@ quick 每設定 100 次請求，25 次暖機排空後計分 75 次；confirm 每
 
 ## 效能與限制
 
-歷史 s／640 三輪確認曾在 16／32 路、batch 8 下比官方湊批快約 45%～51%；
+本版 FP16 s／640 三輪短測確認在 16／32 路、batch 8 下為官方 FP16 湊批的約 2.20～2.26 倍；
 這是指定版本與測試配置的結果，並非所有模型／尺寸的保證。
+相對官方 FP32，COCO AP50–95 最大下降 0.0385 個百分點，三任務皆符合 0.5 的門檻。
+影像數、各項 AP 與模型／二進位雜湊見 [AP 驗證報告](docs/ap_fp16.md)。
 四模型 1920、FP32、batch 1 的短測，vONNX 合計約 17.76 次推論／秒、官方約 15.72。
 各模型共享 GPU 運算資源，獨立引擎不提供硬體分區或延遲隔離；增加路數可能只增加排隊。
 ORT 結尾同步仍保留，完全非同步模式的清理崩潰尚未解決。

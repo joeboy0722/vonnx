@@ -14,6 +14,8 @@ def main():
     parser.add_argument("--model", type=Path, default=ROOT / "models/yolov8n/yolov8n.onnx")
     parser.add_argument("--image", type=Path)
     parser.add_argument("--imgsz", type=int, default=640)
+    parser.add_argument("--precision", choices=["auto","fp32","fp16"], default="auto")
+    parser.add_argument("--cache-dir", type=Path)
     parser.add_argument("--requests", type=int, default=4, choices=range(1, 33))
     parser.add_argument("--batch", type=int, default=8)
     args = parser.parse_args()
@@ -24,16 +26,20 @@ def main():
     image = load_image(str(image_path))
     config = EngineConfig()
     config.model_path = str(args.model)
+    config.precision=args.precision
+    if args.cache_dir:config.model_cache_dir=str(args.cache_dir)
     config.imgsz = args.imgsz
     config.max_batch_size = args.batch
     config.max_input_height, config.max_input_width = image.shape[:2]
     engine = vONNXEngine(config)
     try:
+        spec=engine.model_spec
+        print(f"Precision: {spec.source_precision} -> {spec.effective_precision}; converted={spec.converted}")
         pending = [engine.submit_numpy(lane, lane, image, PixelFormat.RGB24) for lane in range(args.requests)]
         for future in pending:
             result = future.result(timeout=30)[0]
             print(
-                f"request={result.frame_id} batch={result.batch_size} boxes={len(result.boxes)} keypoints={len(result.keypoints)} masks={len(result.masks)}"
+                f"request={result.frame_id} batch={result.batch_size} physical={result.physical_batch_size} boxes={len(result.boxes)} keypoints={len(result.keypoints)} masks={len(result.masks)}"
             )
         engine.pause()
         engine.resume()

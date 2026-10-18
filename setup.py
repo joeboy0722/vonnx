@@ -178,12 +178,13 @@ class CUDABuildExt(build_ext):
 
 setup(
     name="vonnx",
-    version="0.3.0",
+    version="0.4.0",
     author="vONNX contributors",
-    description="Resident CUDA/ONNX Runtime inference for FP32 YOLOv8 Detect, Pose and Segmentation",
+    description="Resident CUDA/ONNX Runtime YOLOv8 inference with automatic FP16 preparation",
     license="MIT",
     license_files=["LICENSE", "THIRD_PARTY_NOTICES.md"],
     packages=["vonnx"],
+    install_requires=["onnx==1.22.0", "onnxruntime-gpu==1.28.0", "numpy"],
     setup_requires=["pybind11"],
     ext_modules=[
         Extension(

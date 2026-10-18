@@ -11,6 +11,7 @@ def main():
     p.add_argument("--datasets", choices=["none", "smoke", "full"], default="smoke")
     p.add_argument("--force", action="store_true")
     p = commands.add_parser("validate")
+    p.add_argument("--precision", choices=["auto", "fp32", "fp16"], default="auto")
     p.add_argument("--tasks", nargs="+", choices=TASKS, default=list(TASKS))
     p.add_argument("--scales", nargs="+", choices=SCALES, default=list(SCALES))
     p.add_argument("--sizes", nargs="+", type=int, default=list(RESOLUTIONS))
@@ -51,6 +52,7 @@ def main():
     p = commands.add_parser("report")
     p.add_argument("--input", default="runs/benchmark")
     p = commands.add_parser("optimize", help="Bounded s/640 optimization; never starts full tests")
+    p.add_argument("--precision", choices=["fp32", "fp16"], default="fp32")
     p.add_argument(
         "--phase", choices=["check", "baseline", "quick", "confirm", "diagnostic", "report"], default="quick"
     )

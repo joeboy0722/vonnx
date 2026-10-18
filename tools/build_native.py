@@ -61,6 +61,7 @@ subprocess.run(
     check=True,
 )
 shutil.copyfile(ROOT / "include/vonnx_c_api.h", output / "vonnx_c_api.h")
+shutil.copyfile(ROOT / "vonnx/precision.py", output / "precision.py")
 for p in (Path(onnxruntime.__file__).parent / "capi").glob("*.dll"):
     shutil.copyfile(p, output / p.name)
 print(output / "vonnx.dll")

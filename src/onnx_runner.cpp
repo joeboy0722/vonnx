@@ -8,14 +8,15 @@ ONNXRunner::~ONNXRunner() {
     session_.reset();
 }
 ONNXRunner::ONNXRunner(const std::string &path, int gpu, int width, int height, int max_batch,
-                       cudaStream_t stream)
-    : memory_("Cuda", OrtDeviceAllocator, gpu, OrtMemTypeDefault), path_(path) {
+                       cudaStream_t stream, size_t probe_budget, bool prefer_nhwc)
+    : memory_("Cuda", OrtDeviceAllocator, gpu, OrtMemTypeDefault), path_(path), prefer_nhwc_(prefer_nhwc) {
+    spec_.cuda_prefer_nhwc=prefer_nhwc;
+    spec_.runtime_version=OrtGetApiBase()->GetVersionString();
     options_.SetIntraOpNumThreads(1);
     options_.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
-    // CPU-only metadata/shape probe precedes the one persistent CUDA session.
-    // This makes the engine's exact buffer reservation known before setting its
-    // arena limit.
-    session_ = std::make_unique<Ort::Session>(env_, std::filesystem::u8path(path).c_str(), options_);
+    // Metadata inspection never executes the graph on CPU. The initialization
+    // probe below executes with CUDA, including models with FP16 operators.
+    initialize_cuda(gpu,stream,probe_budget);
     Ort::AllocatorWithDefaultOptions allocator;
     auto metadata = session_->GetModelMetadata();
     auto read = [&](const char *key) {
@@ -37,9 +38,10 @@ ONNXRunner::ONNXRunner(const std::string &path, int gpu, int width, int height, 
     auto input = session_->GetInputTypeInfo(0);
     auto input_info = input.GetTensorTypeAndShapeInfo();
     auto dims = input_info.GetShape();
-    if (input_info.GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT || dims.size() != 4 ||
+    spec_.input_dtype = int(input_info.GetElementType());
+    if ((spec_.input_dtype != 1 && spec_.input_dtype != 10) || dims.size() != 4 ||
         dims[1] != 3)
-        throw std::invalid_argument("Only FP32 NCHW RGB models supported");
+        throw std::invalid_argument("Only FP32/FP16 NCHW RGB models supported");
     if ((dims[2] > 0 && dims[2] != height) || (dims[3] > 0 && dims[3] != width))
         throw std::invalid_argument("imgsz does not match static ONNX shape");
     spec_.dynamic_batch = dims[0] < 0;
@@ -69,17 +71,20 @@ ONNXRunner::ONNXRunner(const std::string &path, int gpu, int width, int height, 
         spec_.keypoints = values[0];
         spec_.keypoint_dims = values[1];
     }
-    std::vector<float> probe(size_t(3) * height * width, 0.f);
+    std::vector<uint8_t> probe(size_t(3) * height * width * (spec_.input_dtype==10?2:4), 0);
     auto cpu = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     int64_t shape[4] = {1, 3, height, width};
-    auto tensor = Ort::Value::CreateTensor<float>(cpu, probe.data(), probe.size(), shape, 4);
+    auto tensor = Ort::Value::CreateTensor(cpu, probe.data(), probe.size(), shape, 4,
+                    ONNXTensorElementDataType(spec_.input_dtype));
     Ort::IoBinding binding(*session_);
     binding.BindInput(spec_.input_name.c_str(), tensor);
     for (size_t i = 0; i < session_->GetOutputCount(); ++i) {
         spec_.output_names.emplace_back(session_->GetOutputNameAllocated(i, allocator).get());
         auto type = session_->GetOutputTypeInfo(i);
-        if (type.GetTensorTypeAndShapeInfo().GetElementType() != ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
-            throw std::invalid_argument("Only FP32 outputs supported");
+        int dtype=int(type.GetTensorTypeAndShapeInfo().GetElementType());
+        if (dtype != 1 && dtype != 10)
+            throw std::invalid_argument("Only FP32/FP16 outputs supported");
+        spec_.output_dtypes.push_back(dtype);
         binding.BindOutput(spec_.output_names.back().c_str(), cpu);
     }
     session_->Run(Ort::RunOptions{}, binding);
@@ -109,23 +114,26 @@ ONNXRunner::ONNXRunner(const std::string &path, int gpu, int width, int height, 
 }
 void ONNXRunner::initialize_cuda(int gpu, cudaStream_t stream, size_t arena_bytes) {
     session_.reset();
+    options_ = Ort::SessionOptions{};
+    options_.SetIntraOpNumThreads(1);
+    options_.SetGraphOptimizationLevel(ORT_ENABLE_ALL);
     OrtCUDAProviderOptionsV2 *cuda = nullptr;
     auto &api = Ort::GetApi();
     Ort::ThrowOnError(api.CreateCUDAProviderOptions(&cuda));
     std::unique_ptr<OrtCUDAProviderOptionsV2, void (*)(OrtCUDAProviderOptionsV2 *)> owner(
         cuda, api.ReleaseCUDAProviderOptions);
     const char *keys[] = {"device_id", "use_tf32", "cudnn_conv_algo_search", "gpu_mem_limit",
-                          "arena_extend_strategy"};
+                          "arena_extend_strategy", "prefer_nhwc"};
     std::string gpu_text = std::to_string(gpu), limit = std::to_string(arena_bytes);
-    const char *values[] = {gpu_text.c_str(), "0", "HEURISTIC", limit.c_str(), "kSameAsRequested"};
-    Ort::ThrowOnError(api.UpdateCUDAProviderOptions(cuda, keys, values, 5));
+    const char *values[] = {gpu_text.c_str(), "0", "HEURISTIC", limit.c_str(), "kSameAsRequested",prefer_nhwc_?"1":"0"};
+    Ort::ThrowOnError(api.UpdateCUDAProviderOptions(cuda, keys, values, 6));
     Ort::ThrowOnError(api.UpdateCUDAProviderOptionsWithValue(cuda, "user_compute_stream", stream));
     options_.AppendExecutionProvider_CUDA_V2(*cuda);
     session_ = std::make_unique<Ort::Session>(env_, std::filesystem::u8path(path_).c_str(), options_);
     // Keep EP-owned host release callbacks completed before session teardown.
     // The bound GPU tensors remain resident; copy-stream overlap is independent.
 }
-void ONNXRunner::prepare_bindings(int slot, float *input, const std::vector<float *> &outputs,
+void ONNXRunner::prepare_bindings(int slot, void *input, const std::vector<void *> &outputs,
                                   int max_batch) {
     if (bindings_.size() <= size_t(slot))
         bindings_.resize(slot + 1);
@@ -135,8 +143,9 @@ void ONNXRunner::prepare_bindings(int slot, float *input, const std::vector<floa
         auto record = std::make_unique<Binding>();
         record->io = std::make_unique<Ort::IoBinding>(*session_);
         std::vector<int64_t> shape{batch, 3, spec_.height, spec_.width};
-        record->tensors.push_back(Ort::Value::CreateTensor<float>(
-            memory_, input, size_t(batch) * 3 * spec_.height * spec_.width, shape.data(), 4));
+        record->tensors.push_back(Ort::Value::CreateTensor(
+            memory_, input, size_t(batch) * 3 * spec_.height * spec_.width * (spec_.input_dtype==10?2:4),
+            shape.data(), 4, ONNXTensorElementDataType(spec_.input_dtype)));
         record->io->BindInput(spec_.input_name.c_str(), record->tensors.back());
         for (size_t i = 0; i < outputs.size(); ++i) {
             auto sh = spec_.output_shapes[i];
@@ -145,7 +154,8 @@ void ONNXRunner::prepare_bindings(int slot, float *input, const std::vector<floa
             for (auto d : sh)
                 count *= size_t(d);
             record->tensors.push_back(
-                Ort::Value::CreateTensor<float>(memory_, outputs[i], count, sh.data(), sh.size()));
+                Ort::Value::CreateTensor(memory_, outputs[i], count*(spec_.output_dtypes[i]==10?2:4),
+                    sh.data(), sh.size(), ONNXTensorElementDataType(spec_.output_dtypes[i])));
             record->io->BindOutput(spec_.output_names[i].c_str(), record->tensors.back());
         }
         cache[batch] = std::move(record);
@@ -154,6 +164,8 @@ void ONNXRunner::prepare_bindings(int slot, float *input, const std::vector<floa
 void ONNXRunner::run(int slot, int batch) { session_->Run(run_options_, *bindings_.at(slot).at(batch)->io); }
 void ONNXRunner::run_zero_copy(const float *input, const std::vector<float *> &outputs, int batch,
                                cudaStream_t) {
+    if(spec_.input_dtype!=1 || std::any_of(spec_.output_dtypes.begin(),spec_.output_dtypes.end(),[](int t){return t!=1;}))
+        throw std::invalid_argument("run_zero_copy accepts FP32 I/O only; use prepared typed bindings for FP16 I/O");
     std::vector<int64_t> shape{batch, 3, spec_.height, spec_.width};
     auto tensor = Ort::Value::CreateTensor<float>(
         memory_, const_cast<float *>(input), size_t(batch) * 3 * spec_.height * spec_.width, shape.data(), 4);

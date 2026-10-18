@@ -2,6 +2,8 @@
 #include "vonnx/common.hpp"
 #include "vonnx/cuda_resources.hpp"
 namespace vonnx {
+void launch_to_half(const float*, uint16_t*, size_t, cudaStream_t);
+void launch_from_half(const uint16_t*, float*, size_t, cudaStream_t);
 struct AffineMatrix {
     float scale, pad_x, pad_y;
     int src_w, src_h, resized_w, resized_h;

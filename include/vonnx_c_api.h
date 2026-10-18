@@ -88,6 +88,27 @@ VONNX_API int vonnx_resume_v2(vonnx_engine_handle_t);
 VONNX_API int vonnx_stop_v2(vonnx_engine_handle_t);
 VONNX_API int vonnx_close_v2(vonnx_engine_handle_t);
 VONNX_API int vonnx_resources_get_v2(vonnx_engine_handle_t, vonnx_resources_v2 *);
+/* v3: precision 0=auto, 1=fp32, 2=fp16. Conversion needs a Python interpreter
+   with onnx + onnxruntime and precision.py next to vonnx.dll (or precision_tool).
+   All input strings are UTF-8; results below are caller-owned snapshots. */
+typedef struct {
+    uint32_t version, struct_size;
+    vonnx_config_v2 base;
+    int precision;
+    int batch_shape_policy; /* 0=auto, 1=dynamic, 2=fixed max batch with zero padding */
+    const char *model_cache_dir, *precision_python, *precision_tool;
+} vonnx_config_v3;
+typedef struct {
+    uint32_t version, struct_size;
+    int source_precision, effective_precision, converted; /* 1=fp32 2=fp16 3=mixed */
+    int input_dtype, output_count, output_dtypes[2]; /* ONNX dtype: 1=float, 10=float16 */
+    int fixed_batch_size; /* 0=dynamic; nonzero includes discarded padding rows */
+    char prepared_model_path[8192]; /* UTF-8, NUL terminated */
+} vonnx_model_info_v3;
+VONNX_API void vonnx_config_init_v3(vonnx_config_v3 *);
+VONNX_API vonnx_engine_handle_t vonnx_create_engine_v3(const vonnx_config_v3 *);
+VONNX_API int vonnx_model_info_get_v3(vonnx_engine_handle_t, vonnx_model_info_v3 *);
+VONNX_API int vonnx_result_physical_batch_v3(const vonnx_result_v1 *);
 #ifdef __cplusplus
 }
 #endif

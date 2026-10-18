@@ -1,4 +1,8 @@
-# vONNX 0.3.0 Windows x64 發布包
+# vONNX 0.4.0 Windows x64 發布包
+
+本版新增 FP16 自動辨識、內部轉換快取、原生半精度 I/O 與 C API v3。
+三種 s／640 的完整 COCO AP 已通過，詳見 [AP 報告](ap_fp16.md)；
+精度與固定 batch 策略見 [FP16 指南](fp16.md)。舊 v0.3.0 不包含這些功能。
 
 ## 授權與依賴
 
@@ -16,8 +20,7 @@ Python 可透過 `VONNX_DLL_DIRS` 指定多個 DLL 目錄（Windows 用分號分
 ## Python 安裝與呼叫
 
 ```powershell
-python -m pip install .\vonnx-0.3.0-cp312-cp312-win_amd64.whl
-python -m pip install onnxruntime-gpu==1.28.0 numpy
+python -m pip install .\vonnx-0.4.0-cp312-cp312-win_amd64.whl
 $env:VONNX_DLL_DIRS = 'C:\runtime\ort;C:\runtime\cuda;C:\runtime\cudnn'
 ```
 
@@ -34,6 +37,7 @@ config.max_batch_size = 8
 config.batch_mode = "throughput"
 config.max_latency_ms = 2
 config.pipeline_depth = 2
+config.precision = "fp16"        # auto 保留原精度；fp32 拒絕半精度來源
 engine = vONNXEngine(config)
 try:
     futures = [engine.submit_numpy(i, i, image, PixelFormat.RGB24) for i in range(16)]
@@ -51,22 +55,30 @@ CPU 非同步輸入會複製；GPU 輸入須保持有效直到完成，並傳入
 
 ## C / C++ DLL 呼叫
 
-SDK zip 包含 `vonnx.dll`、`vonnx.lib`、`vonnx_c_api.h` 與 `c_api.cpp`。
+SDK zip 包含 `vonnx.dll`、`vonnx.lib`、`vonnx_c_api.h`、`precision.py` 與 `c_api.cpp`，
+另有 Python 範例、使用方式、AP 報告、MIT LICENSE 與第三方授權聲明。
+原生 FP32 轉 FP16 需要可用的 Python、ONNX 1.22.0 與 ORT GPU 1.28.0；
+直接執行既有 FP32／FP16 ONNX 不需要轉換器。
 在 VS 2022 x64 Native Tools 命令列：
 
 ```powershell
 cl /std:c++17 /EHsc /MD /I. c_api.cpp vonnx.lib delayimp.lib /Fe:c_api.exe /link /DELAYLOAD:vonnx.dll
-.\c_api.exe yolov8s.onnx image.rgb 640 480
+$env:VONNX_PYTHON = 'C:\myenv\python.exe'
+$env:VONNX_MODEL_CACHE_DIR = 'C:\cache\vonnx'
+.\c_api.exe yolov8s.onnx image.rgb 640 480 fp16
 ```
 
 `image.rgb` 是未壓縮 RGB24，可用 Python `load_image("image.jpg").tofile("image.rgb")` 產生。
-`vonnx_predict_v1` 是阻塞呼叫；多個執行緒可以對同一 v2 engine 同時提交以形成批次。
-使用 `vonnx_config_init_v2` 設定預設值，`vonnx_create_engine_v2` 建立引擎；
+`vonnx_predict_v1` 是阻塞呼叫；多個執行緒可以對同一引擎同時提交以形成批次。
+使用 `vonnx_config_init_v3` 設定預設值，`vonnx_create_engine_v3` 建立引擎；
+precision：0=auto、1=fp32、2=fp16；`vonnx_model_info_get_v3` 查詢精度與 I/O 型別。
 失敗時立即讀取執行緒自己的 `vonnx_last_error()`。
 結果使用 `vonnx_result_free` 釋放；結果釋放後其 boxes/keypoints/masks 指標失效。
 pixel_format：0=BGR24、1=RGB24、2=RGBA32、3=NV12。
 結束時先等待所有呼叫完成再 `vonnx_destroy_engine`，不能與推論同時銷毀。
-v2 handle 使用 v1 影像與通用結果結構；舊 bbox-only API 僅支援 Detect。
+v3 handle 使用 v1 影像與通用結果結構及 v2 生命週期介面；v1／v2 布局保持相容。
+舊 bbox-only API 僅支援 Detect。`vonnx_result_physical_batch_v3` 可查詢實際執行 batch。
+範例採低延遲 batch 1；吞吐用途請設定 batch 8、throughput、concurrency 32。
 
 ## 模型與驗證工具
 
@@ -78,7 +90,7 @@ python -m vonnx_tools prepare --scales s --datasets smoke
 python examples/quick_start.py --model models/yolov8s/yolov8s.onnx
 ```
 
-ONNX 須為 FP32 NCHW YOLOv8 原始輸出、nms=False；支援 Detect/Pose/Seg。
+ONNX 須為 FP32／FP16 NCHW YOLOv8 原始輸出、nms=False；支援 Detect/Pose/Seg。
 完整驗證／跑分為獨立指令，詳細見 `docs/validation.md`；不會自動開始。
 ORT 結尾同步仍保留；多引擎共享 GPU 算力／頻寬，並不提供硬體隔離。
 既有跑分的版本與範圍見 `docs/performance.md`，不代表所有硬體都能得到相同增幅。

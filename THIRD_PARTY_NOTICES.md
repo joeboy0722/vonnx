@@ -24,4 +24,9 @@ SOFTWARE.
 
 ONNX Runtime is an external dependency under the MIT license: https://github.com/microsoft/onnxruntime/blob/main/LICENSE
 
+Automatic FP16 preparation uses the ONNX Runtime Python transformer utilities (MIT)
+and ONNX Python package (Apache-2.0), installed as external dependencies. Their
+upstream notices and licenses remain in those distributions; no converter source
+from those projects is copied into vONNX.
+
 CUDA, cuBLAS, cuDNN, Python dependencies, Ultralytics software and model weights retain their respective licenses. No NVIDIA/ORT runtime DLLs or model weights are included in the binary release assets.

@@ -67,12 +67,15 @@ def manifest(model):
 
 
 def engine(
-    model, imgsz, *, batch=16, conf=0.25, debug=False, full_masks=False, max_width=1920, max_height=1080
+    model, imgsz, *, batch=16, conf=0.25, debug=False, full_masks=False, max_width=1920, max_height=1080,
+    precision="auto", model_path=None
 ):
     from vonnx import EngineConfig, vONNXEngine
 
     c = EngineConfig()
-    c.model_path = str(ROOT / manifest(model)["onnx"])
+    c.model_path = str(model_path or ROOT / manifest(model)["onnx"])
+    c.precision = precision
+    c.model_cache_dir = str(ROOT / "runs/fp16/cache")
     c.imgsz = imgsz
     c.max_batch_size = batch
     c.conf_threshold = conf

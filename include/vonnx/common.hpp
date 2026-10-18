@@ -55,6 +55,7 @@ struct DetectionResult {
     std::vector<std::vector<Keypoint>> keypoints;
     std::vector<Mask> masks;
     int batch_size{1};
+    int physical_batch_size{1};
     double queue_ms{0}, h2d_ms{0}, preprocess_ms{0}, inference_ms{0}, postprocess_ms{0}, d2h_ms{0};
     double batch_wait_ms{0}, dispatch_ms{0};
     std::vector<float> debug_input;

@@ -2,6 +2,7 @@
 #include "vonnx_c_api.h"
 #include "vonnx/vonnx_engine.hpp"
 #include <algorithm>
+#include <cstring>
 using namespace vonnx;
 namespace {
 thread_local std::string error_text;
@@ -26,6 +27,7 @@ EngineConfig from_v1(const vonnx_config_v1 *c) {
         throw std::invalid_argument("Invalid config version/size/model path");
     EngineConfig cfg;
     cfg.model_path = c->model_path;
+    cfg.precision = "fp32";
     cfg.input_height = c->input_height;
     cfg.input_width = c->input_width;
     cfg.max_input_height = c->max_input_height;
@@ -89,6 +91,7 @@ VONNX_API vonnx_engine_handle_t vonnx_create_engine(const char *path, int batch,
     try {
         EngineConfig cfg;
         cfg.model_path = path ? path : "yolov8n.onnx";
+        cfg.precision = "fp32";
         cfg.max_batch_size = batch > 0 ? batch : 16;
         cfg.max_latency_ms = latency > 0 ? latency : 2;
         cfg.conf_threshold = conf >= 0 ? conf : .25f;
@@ -135,6 +138,50 @@ VONNX_API vonnx_engine_handle_t vonnx_create_engine_v2(const vonnx_config_v2 *c)
     }
 }
 VONNX_API int vonnx_pause_v2(vonnx_engine_handle_t h) { return lifecycle(h, &vONNXEngine::pause); }
+VONNX_API void vonnx_config_init_v3(vonnx_config_v3 *c) {
+    if(!c) return;
+    *c={}; c->version=3;c->struct_size=sizeof(*c);vonnx_config_init_v2(&c->base);
+}
+VONNX_API vonnx_engine_handle_t vonnx_create_engine_v3(const vonnx_config_v3 *c) {
+    error_text.clear();
+    try {
+        if(!c || c->version!=3 || c->struct_size!=sizeof(*c) || c->precision<0 || c->precision>2 ||
+           c->batch_shape_policy<0 || c->batch_shape_policy>2 ||
+           c->base.version!=2 || c->base.struct_size!=sizeof(c->base) ||
+           c->base.batch_mode<0 || c->base.batch_mode>1 || !c->base.concurrency)
+            throw std::invalid_argument("Invalid v3 configuration");
+        auto cfg=from_v1(&c->base.base);
+        cfg.concurrency=c->base.concurrency;
+        cfg.gpu_memory_budget_mb=c->base.gpu_memory_budget_mb;
+        cfg.batch_mode=c->base.batch_mode?"latency":"throughput";
+        cfg.pipeline_depth=c->base.pipeline_depth;
+        cfg.collect_timings=c->base.collect_timings!=0;
+        cfg.precision=c->precision==2?"fp16":c->precision==1?"fp32":"auto";
+        cfg.batch_shape_policy=c->batch_shape_policy==2?"fixed":c->batch_shape_policy==1?"dynamic":"auto";
+        if(c->model_cache_dir) cfg.model_cache_dir=c->model_cache_dir;
+        if(c->precision_python) cfg.precision_python=c->precision_python;
+        if(c->precision_tool) cfg.precision_tool=c->precision_tool;
+        return new vONNXEngine(cfg);
+    } catch(...) {error();return nullptr;}
+}
+VONNX_API int vonnx_model_info_get_v3(vonnx_engine_handle_t h,vonnx_model_info_v3 *out) {
+    error_text.clear();
+    try {
+        if(!h || !out || out->version!=3 || out->struct_size!=sizeof(*out))
+            throw std::invalid_argument("Invalid v3 model descriptor");
+        const auto &s=static_cast<vONNXEngine*>(h)->model_spec();
+        if(s.prepared_model_path.size()>=sizeof(out->prepared_model_path))
+            throw std::runtime_error("Prepared model path exceeds C API descriptor capacity");
+        auto code=[](const std::string& p){return p=="fp32"?1:p=="fp16"?2:3;};
+        out->source_precision=code(s.source_precision);out->effective_precision=code(s.effective_precision);
+        out->converted=s.converted;out->input_dtype=s.input_dtype;
+        out->output_count=int(s.output_dtypes.size());
+        out->fixed_batch_size=s.fixed_batch_size;
+        for(int i=0;i<2;++i) out->output_dtypes[i]=i<out->output_count?s.output_dtypes[i]:0;
+        std::memcpy(out->prepared_model_path,s.prepared_model_path.c_str(),s.prepared_model_path.size()+1);
+        return 0;
+    }catch(...){error();return -1;}
+}
 VONNX_API int vonnx_resume_v2(vonnx_engine_handle_t h) { return lifecycle(h, &vONNXEngine::resume); }
 VONNX_API int vonnx_stop_v2(vonnx_engine_handle_t h) { return lifecycle(h, &vONNXEngine::stop); }
 VONNX_API int vonnx_close_v2(vonnx_engine_handle_t h) { return lifecycle(h, &vONNXEngine::close); }
@@ -220,6 +267,11 @@ VONNX_API int vonnx_predict_v1(vonnx_engine_handle_t handle, const vonnx_image_v
 VONNX_API void vonnx_result_free(vonnx_result_v1 *result) {
     if (result)
         delete static_cast<OwnedResult *>(result->_owner);
+}
+VONNX_API int vonnx_result_physical_batch_v3(const vonnx_result_v1 *result) {
+    error_text.clear();
+    if(!result || !result->_owner) {error_text="Invalid result";return -1;}
+    return static_cast<const OwnedResult*>(result->_owner)->result.physical_batch_size;
 }
 VONNX_API int vonnx_predict(vonnx_engine_handle_t handle, uint64_t stream, uint64_t frame,
                             const unsigned char *data, int w, int h, int fmt, vonnx_bbox_t *boxes,

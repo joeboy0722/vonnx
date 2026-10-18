@@ -1,0 +1,119 @@
+{
+  "passed": true,
+  "dataset": "COCO val2017; pose images with num_keypoints > 0",
+  "native_precision": "FP16 with protected FP32 decoder",
+  "reference_precision": "official PyTorch FP32",
+  "imgsz": [
+    640,
+    640
+  ],
+  "batch": 1,
+  "confidence": 0.001,
+  "iou": 0.7,
+  "max_det": 300,
+  "rect": false,
+  "allowed_drop_percentage_points": 0.5,
+  "binary_sha256": "55fbcfeab264247356752880a13e4d7a70720cb72ed3439703f1cbcd1f4c8948",
+  "converter_sha256": "efd4b46aa06944e86530189b66cbbcbdeb58914b8edbb5fca05893db512c8d8e",
+  "environment": {
+    "python": "3.12.11 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 12:58:53) [MSC v.1929 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "gpu": "NVIDIA GeForce RTX 3070, 8192 MiB, 591.59",
+    "versions": {
+      "ultralytics": "8.4.115",
+      "onnx": "1.22.0",
+      "onnxruntime-gpu": "1.28.0",
+      "torch": "2.13.0+cu126",
+      "numpy": "2.5.1",
+      "opencv-python": "5.0.0.93",
+      "pycocotools": "2.0.11"
+    }
+  },
+  "models": [
+    {
+      "model": "yolov8s",
+      "images": 5000,
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.44268541303848763,
+          "official_ap": 0.44302410657336566,
+          "difference_percentage_points": 0.03386935348780318,
+          "drop_percentage_points": 0.03386935348780318
+        }
+      },
+      "image_ids_sha256": "7e607ec455921747348bf7476fe4bf3a9c4129348b351c64014e755c1ac8c12e",
+      "weight_sha256": "1f47a78bf100391c2a140b7ac73a1caae18c32779be7d310658112f7ac9aa78a",
+      "source_onnx_sha256": "612b6ab4d21244d7c82177453788f631c9e7b06231b7fd7a4224aa8c5e6ea614",
+      "prepared_model": {
+        "sha256": "6058328cea401b71d0f11661a1e1caad49348f838996575e6c350a6d8715360b",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "input_dtype": 1,
+        "output_dtypes": [
+          1
+        ]
+      }
+    },
+    {
+      "model": "yolov8s-pose",
+      "images": 2346,
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.5602742403680417,
+          "official_ap": 0.5605510007605737,
+          "difference_percentage_points": 0.02767603925319939,
+          "drop_percentage_points": 0.02767603925319939
+        },
+        "keypoints": {
+          "engine_ap": 0.5994933458212481,
+          "official_ap": 0.5994925545166242,
+          "difference_percentage_points": 7.913046239371724e-05,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "image_ids_sha256": "05b6e416633181ac406c08da3aca623a161c53d549db675f37e3a73676b6a394",
+      "weight_sha256": "234314cd8baf62616791aceb9ea6ad5c19f26cf6c0d8f3a1bfce1e23b186cfb3",
+      "source_onnx_sha256": "b32a2482d034f64776ee977a6671ffe0e765f52f501d1749cc1f3dc97c023a45",
+      "prepared_model": {
+        "sha256": "4f96c83424d626650a4def469266e38250934e465f682a5753d3432440ce69d8",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "input_dtype": 1,
+        "output_dtypes": [
+          1
+        ]
+      }
+    },
+    {
+      "model": "yolov8s-seg",
+      "images": 5000,
+      "metrics": {
+        "bbox": {
+          "engine_ap": 0.4401254210915217,
+          "official_ap": 0.44050982773874187,
+          "difference_percentage_points": 0.038440664722017015,
+          "drop_percentage_points": 0.038440664722017015
+        },
+        "segm": {
+          "engine_ap": 0.3564628971110778,
+          "official_ap": 0.356390070063061,
+          "difference_percentage_points": 0.007282704801681028,
+          "drop_percentage_points": 0.0
+        }
+      },
+      "image_ids_sha256": "7e607ec455921747348bf7476fe4bf3a9c4129348b351c64014e755c1ac8c12e",
+      "weight_sha256": "0bac0770b55e5eb5b76a61bc535673288dcec36c2bc0cd25ee0d584c632f3413",
+      "source_onnx_sha256": "346c83190b71ec4cd62638dac6a4994c52a7a52a886bcd694bf33a1105bebf2e",
+      "prepared_model": {
+        "sha256": "c8861c1ee3fef4c4f98cf4cab198a1eb5809746c675e2a6cfab3737ce69d362f",
+        "source_precision": "fp32",
+        "effective_precision": "mixed",
+        "input_dtype": 1,
+        "output_dtypes": [
+          1,
+          1
+        ]
+      }
+    }
+  ]
+}

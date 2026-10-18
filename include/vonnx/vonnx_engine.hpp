@@ -8,6 +8,8 @@
 namespace vonnx {
 struct EngineConfig {
     std::string model_path;
+    std::string precision{"auto"}, model_cache_dir, precision_python, precision_tool;
+    std::string batch_shape_policy{"auto"}; // auto: FP16 throughput pads; FP32/latency stay dynamic
     size_t max_batch_size{8};
     double max_latency_ms{-1.0};
     std::string batch_mode{"throughput"};

@@ -31,7 +31,7 @@ STAGES = (
 class Official:
     """One resident predictor, one dispatcher; native timer and identical batch deadline."""
 
-    def __init__(self, model, batch, wait, rgb):
+    def __init__(self, model, batch, wait, rgb, precision="fp32"):
         import torch
         from ultralytics import YOLO
         from vonnx import DeadlineWaiter
@@ -42,8 +42,13 @@ class Official:
         self.model = YOLO(str(ROOT / manifest(model)["weight"]))
         self.model.to("cuda")
         self.model.model.float()
+        self.half = precision == "fp16"
         self.batch, self.wait = batch, wait / 1000
         self.rgb = rgb
+        # Both backends consume preloaded images in their native uint8 format.
+        # Avoid charging the official predictor an extra RGB->BGR adapter copy.
+        self.bgr = [np.ascontiguousarray(a[:, :, ::-1]) for a in rgb]
+        self.bgr_by_id = {id(a): b for a,b in zip(rgb,self.bgr)}
         self.initialized = concurrent.futures.Future()
         self.queue = queue.Queue(32)
         self.timer = DeadlineWaiter()
@@ -53,7 +58,7 @@ class Official:
 
     def submit(self, lane, frame, image):
         f = concurrent.futures.Future()
-        self.queue.put_nowait((f, image, time.perf_counter(), lane, frame))
+        self.queue.put_nowait((f, self.bgr_by_id[id(image)], time.perf_counter(), lane, frame))
         self.timer.notify()
         return f
 
@@ -62,10 +67,10 @@ class Official:
             # Cache cuDNN's thread-local plans on the actual dispatcher thread.
             for n in range(1, self.batch + 1):
                 self.model.predict(
-                    [np.ascontiguousarray(self.rgb[i % len(self.rgb)][:, :, ::-1]) for i in range(n)],
+                    [self.bgr[i % len(self.bgr)] for i in range(n)],
                     imgsz=640,
                     rect=False,
-                    half=False,
+                    half=self.half,
                     conf=0.25,
                     iou=0.7,
                     max_det=300,
@@ -96,10 +101,10 @@ class Official:
             dispatch = time.perf_counter()
             try:
                 result = self.model.predict(
-                    [np.ascontiguousarray(i[1][:, :, ::-1]) for i in items],
+                    [i[1] for i in items],
                     imgsz=640,
                     rect=False,
-                    half=False,
+                    half=self.half,
                     conf=0.25,
                     iou=0.7,
                     max_det=300,
@@ -127,6 +132,7 @@ class Official:
                     f.set_result(
                         dict(
                             batch_size=len(items),
+                            physical_batch_size=len(items),
                             stream_id=lane,
                             frame_id=frame,
                             queue_ms=max(
@@ -151,12 +157,16 @@ class Official:
 def native(case, rgb):
     # The archived binary is imported only inside an isolated baseline worker.
     if case["backend"] == "before":
-        sys.path.insert(0, str(ROOT / "runs/optimization/baseline"))
+        sys.path.insert(0, str(ROOT / case.get("baseline_dir", "runs/optimization/baseline")))
     from vonnx import EngineConfig, vONNXEngine
 
     c = EngineConfig()
     c.model_path = str(ROOT / manifest(case["model"])["onnx"])
     c.imgsz = 640
+    if hasattr(c,"precision"):
+        c.precision=case.get("precision","fp32")
+        c.model_cache_dir=str(ROOT / "runs/fp16/cache")
+        if hasattr(c,"batch_shape_policy"):c.batch_shape_policy=case.get("batch_shape_policy","auto")
     c.max_batch_size = case["batch"]
     c.max_latency_ms = case["wait"]
     c.max_input_width = max(a.shape[1] for a in rgb)
@@ -211,7 +221,7 @@ def run(case, output):
         eng = (
             native(case, rgb)
             if case["backend"] in ("native", "before")
-            else Official(case["model"], case["batch"], case["wait"], rgb)
+            else Official(case["model"], case["batch"], case["wait"], rgb,case.get("precision","fp32"))
         )
         from vonnx import PixelFormat
 
@@ -246,10 +256,11 @@ def run(case, output):
                     if case["backend"] in ("native", "before"):
                         r = r[0]
                         row = {
-                            k: getattr(r, k, None) for k in ("batch_size", "stream_id", "frame_id", *STAGES)
+                            k: getattr(r, k, None) for k in ("batch_size", "physical_batch_size", "stream_id", "frame_id", *STAGES)
                         }
                     else:
-                        row = {k: r.get(k) for k in ("batch_size", "stream_id", "frame_id", *STAGES)}
+                        row = {k: r.get(k) for k in ("batch_size", "physical_batch_size", "stream_id", "frame_id", *STAGES)}
+                    row['physical_batch_size']=row.get('physical_batch_size') or row['batch_size']
                     if row["stream_id"] != lane or row["frame_id"] != frame:
                         raise AssertionError("Request identity mismatch")
                     row = {**row, "latency_ms": (end - begin) * 1000, "submitted": begin, "completed": end}
@@ -284,6 +295,9 @@ def run(case, output):
             latency=sample_stats([r["latency_ms"] for r in logs]),
             stages={k: sample_stats([r[k] for r in logs if r.get(k) is not None]) for k in STAGES},
             batch_request_histogram=dict(collections.Counter(r["batch_size"] for r in logs)),
+            physical_batch_histogram={str(b):round(sum(1/r['batch_size'] for r in logs if r['physical_batch_size']==b))
+                for b in {r['physical_batch_size'] for r in logs}},
+            padded_images=round(sum((r['physical_batch_size']-r['batch_size'])/r['batch_size'] for r in logs)),
             batch_histogram={
                 str(b): n // b for b, n in collections.Counter(r["batch_size"] for r in logs).items()
             },
@@ -291,14 +305,27 @@ def run(case, output):
             resources_after=after,
             gpu_peak_bytes=peak[0],
             model=info,
+            precision=case.get("precision","fp32"),
+            prepared_model=(dict(
+                path=eng.model_spec.prepared_model_path,
+                sha256=sha256(eng.model_spec.prepared_model_path),
+                source_precision=eng.model_spec.source_precision,
+                effective_precision=eng.model_spec.effective_precision,
+                converted=eng.model_spec.converted,
+                input_dtype=eng.model_spec.input_dtype,
+                output_dtypes=eng.model_spec.output_dtypes,
+                runtime_version=eng.model_spec.runtime_version,
+                cuda_prefer_nhwc=eng.model_spec.cuda_prefer_nhwc,
+                fixed_batch_size=eng.model_spec.fixed_batch_size,
+            ) if hasattr(eng,"model_spec") and hasattr(eng.model_spec,"prepared_model_path") else None),
             dataset=[str(p.relative_to(ROOT)) for p in images(info["task"])],
             binary_sha256=(
                 build_fingerprint()
                 if case["backend"] != "before"
-                else sha256(next((ROOT / "runs/optimization/baseline/vonnx").glob("*.pyd")))
+                else sha256(next((ROOT / case.get("baseline_dir", "runs/optimization/baseline") / "vonnx").glob("*.pyd")))
             ),
             cpu_outputs_retained=True,
-            effective_timings=case["timings"] or case["backend"] == "before",
+            effective_timings=case["timings"],
             effective_config=dict(
                 concurrency=max(32, case["lanes"]) if case["backend"] == "native" else None,
                 queue_capacity=1024 if case["backend"] in ("native", "before") else 32,
@@ -328,7 +355,7 @@ def run(case, output):
         pynvml.nvmlShutdown()
 
 
-def cases(phase):
+def cases(phase, precision="fp32"):
     out = []
     for model in MODELS:
         for lanes in (1, 16, 32):
@@ -364,7 +391,11 @@ def cases(phase):
                             conf=0.25,
                             iou=0.7,
                             max_det=300,
-                            dtype="float32",
+                            dtype="float16" if precision=="fp16" else "float32",
+                            precision=precision,
+                            batch_shape_policy="auto",
+                            input_layout="preloaded uint8 HWC; native RGB24; official BGR24",
+                            conversion_fingerprint=sha256(ROOT / "vonnx/precision.py"),
                             mask_mode="roi",
                             provider_sync=True,
                             cudnn_search=(
@@ -374,6 +405,7 @@ def cases(phase):
                             ),
                         )
                         c["id"] = f"{phase}__{model}__{backend}__s{lanes}__d{depth}__w{wait}__r{repeat+1}"
+                        if precision != "fp32": c["id"] += "__"+precision
                         out.append(c)
     return (
         sorted(out, key=lambda c: (c["repeat"], c["lanes"], MODELS.index(c["model"]), c["backend"]))
@@ -430,6 +462,8 @@ def report(output):
         for p in output.glob("*__*.json")
         if not p.name.startswith("check__")
     ]
+    if len({r['case'].get('precision','fp32') for r in results})>1:
+        raise ValueError('Use separate output directories for each precision; refusing a mixed-precision speed gate')
     rows = []
     for r in results:
         c = r["case"]
@@ -464,7 +498,7 @@ def report(output):
         "# vONNX s / 640 optimization",
         "",
         "100 total: 25 warmup + 75 measured; confirmation 500 total: 25 + 475 × 3.",
-        "CPU results, FP32 / TF32 off, ROI masks, no initialization/download/decode in FPS.",
+        "CPU results, precision recorded per case / TF32 off, ROI masks; conversion/init/warmup excluded.",
         "",
         "| Case | Status | FPS | Mean ms | P95 ms | P99 ms |",
         "|---|---|---:|---:|---:|---:|",
@@ -529,7 +563,7 @@ def report(output):
     for r in check_results:
         lines += ["", f"Correctness {r['case']['model']}: {r['status']}"]
     if (output / "environment.json").exists():
-        env = json.loads((output / "environment.json").read_text())
+        env = json.loads((output / "environment.json").read_text(encoding="utf-8"))
         lines += ["", f"Hardware: {env['gpu']}", "", "Versions: `" + json.dumps(env["versions"]) + "`"]
     lines += [
         "",
@@ -537,7 +571,7 @@ def report(output):
         "Resource counters cover vONNX cudaMalloc calls; ORT/cuDNN allocations are not intercepted.",
         "CUDA free-memory deltas and NVML peak are device-wide and can include other applications.",
         "Detailed timings are separate diagnostic runs; primary comparisons have timings disabled.",
-        "The archived before build always collected GPU timings; disabling that cost is part of the optimization.",
+        "Detailed timing state is recorded per case; before builds retain their original behavior.",
         "Old queue_ms included batch waiting; do not compare it directly with the new separated queue_ms.",
     ]
     (output / "REPORT.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -614,6 +648,8 @@ def report(output):
 
 def optimize(args):
     output = Path(args.output)
+    if getattr(args,"precision","fp32")=="fp16" and str(output)=="runs/optimization":
+        output=ROOT/"runs/fp16/fp16"
     output.mkdir(parents=True, exist_ok=True)
     if args.worker:
         case = json.loads(Path(args.worker).read_text(encoding="utf-8"))
@@ -625,8 +661,10 @@ def optimize(args):
                     "case": case,
                     "status": "passed",
                     "binary_sha256": build_fingerprint(),
+                    "conversion_fingerprint":sha256(ROOT / "vonnx/precision.py"),
                     "correctness": smoke_case(
-                        {"model": case["model"], "imgsz": [640, 640], "batch_limits": [1, 2, 4, 8]}
+                        {"model": case["model"], "imgsz": [640, 640], "batch_limits": [1, 2, 4, 8],
+                         "precision":case.get("precision","fp32")}
                     ),
                 }
                 write_json(output / (case["id"] + ".json"), r)
@@ -644,27 +682,29 @@ def optimize(args):
     if args.phase in ("quick", "confirm"):
         current = build_fingerprint()
         for model in MODELS:
-            p = output / ("check__" + model + ".json")
+            p = output / ("check__" + model + ("__fp16" if getattr(args,"precision","fp32")=="fp16" else "") + ".json")
             if not p.exists():
                 raise RuntimeError("Run optimize --phase check before speed comparisons")
-            r = json.loads(p.read_text())
-            if r.get("status") != "passed" or r.get("binary_sha256") != current:
+            r = json.loads(p.read_text(encoding="utf-8"))
+            if (r.get("status") != "passed" or r.get("binary_sha256") != current or
+                r.get("conversion_fingerprint") != sha256(ROOT / "vonnx/precision.py") or
+                r.get("case",{}).get("source_model_sha256") != sha256(ROOT / manifest(model)["onnx"])):
                 raise RuntimeError("Correctness results are missing or stale; run optimize --phase check")
     if args.phase == "confirm":
         report(output)
         p = output / "quick_gate.json"
-        if not p.exists() or not json.loads(p.read_text())["passed"]:
+        if not p.exists() or not json.loads(p.read_text(encoding="utf-8"))["passed"]:
             raise RuntimeError("Confirmation requires all six quick throughput comparisons to pass")
         current = build_fingerprint()
         for p in output.glob("quick__*.json"):
-            r = json.loads(p.read_text())
+            r = json.loads(p.read_text(encoding="utf-8"))
             if r.get("status") == "passed" and r.get("binary_sha256") != current:
                 raise RuntimeError("Quick results belong to another build; rerun quick before confirmation")
     write_json(output / "environment.json", environment())
     candidates = (
-        [dict(id="check__" + m, model=m, lanes=1, repeat=1, correctness=True) for m in MODELS]
+        [dict(id="check__" + m + ("__fp16" if getattr(args,"precision","fp32")=="fp16" else ""), model=m, lanes=1, repeat=1, correctness=True, precision=getattr(args,"precision","fp32")) for m in MODELS]
         if args.phase == "check"
-        else cases(args.phase)
+        else cases(args.phase, getattr(args,"precision","fp32"))
     )
     selected = [c for c in candidates if not args.case or args.case == c["id"]]
     if not selected:
@@ -676,9 +716,11 @@ def optimize(args):
     # A round includes all three models for one lane/repeat; cumulative child wall time <= 5 min.
     round_time = collections.defaultdict(float)
     for c in selected:
+        c['source_model_sha256']=sha256(ROOT / manifest(c['model'])['onnx'])
+        c['conversion_fingerprint']=sha256(ROOT / "vonnx/precision.py")
         target = output / (c["id"] + ".json")
         if args.resume and target.exists():
-            previous = json.loads(target.read_text())
+            previous = json.loads(target.read_text(encoding="utf-8"))
             compatible_outputs = not c.get("backend", "").startswith("official") or previous.get(
                 "cpu_outputs_retained", False
             )
@@ -717,7 +759,7 @@ def optimize(args):
                 )
                 failed = completed.returncode != 0
                 if failed:
-                    previous = json.loads(target.read_text()) if target.exists() else {"case": c}
+                    previous = json.loads(target.read_text(encoding="utf-8")) if target.exists() else {"case": c}
                     write_json(
                         target,
                         {

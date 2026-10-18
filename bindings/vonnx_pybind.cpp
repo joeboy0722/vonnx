@@ -90,6 +90,7 @@ PYBIND11_MODULE(vonnx_py, m) {
         .def_readonly("keypoints", &DetectionResult::keypoints)
         .def_readonly("masks", &DetectionResult::masks)
         .def_readonly("batch_size", &DetectionResult::batch_size)
+        .def_readonly("physical_batch_size", &DetectionResult::physical_batch_size)
         .def_readonly("debug_input", &DetectionResult::debug_input)
         .def_readonly("debug_outputs", &DetectionResult::debug_outputs)
         .def_readonly("queue_ms", &DetectionResult::queue_ms)
@@ -103,6 +104,11 @@ PYBIND11_MODULE(vonnx_py, m) {
     py::class_<EngineConfig>(m, "EngineConfig")
         .def(py::init<>())
         .def_readwrite("model_path", &EngineConfig::model_path)
+        .def_readwrite("precision", &EngineConfig::precision)
+        .def_readwrite("batch_shape_policy", &EngineConfig::batch_shape_policy)
+        .def_readwrite("model_cache_dir", &EngineConfig::model_cache_dir)
+        .def_readwrite("precision_python", &EngineConfig::precision_python)
+        .def_readwrite("precision_tool", &EngineConfig::precision_tool)
         .def_readwrite("max_batch_size", &EngineConfig::max_batch_size)
         .def_readwrite("max_latency_ms", &EngineConfig::max_latency_ms)
         .def_readwrite("batch_mode", &EngineConfig::batch_mode)
@@ -137,6 +143,15 @@ PYBIND11_MODULE(vonnx_py, m) {
                 }
             });
     py::class_<ModelSpec>(m, "ModelSpec")
+        .def_readonly("source_precision", &ModelSpec::source_precision)
+        .def_readonly("runtime_version", &ModelSpec::runtime_version)
+        .def_readonly("cuda_prefer_nhwc", &ModelSpec::cuda_prefer_nhwc)
+        .def_readonly("fixed_batch_size", &ModelSpec::fixed_batch_size)
+        .def_readonly("effective_precision", &ModelSpec::effective_precision)
+        .def_readonly("converted", &ModelSpec::converted)
+        .def_readonly("prepared_model_path", &ModelSpec::prepared_model_path)
+        .def_readonly("input_dtype", &ModelSpec::input_dtype)
+        .def_readonly("output_dtypes", &ModelSpec::output_dtypes)
         .def_readonly("task", &ModelSpec::task)
         .def_readonly("width", &ModelSpec::width)
         .def_readonly("height", &ModelSpec::height)
@@ -176,8 +191,11 @@ PYBIND11_MODULE(vonnx_py, m) {
         .def_readonly("state", &Stats::state);
     py::class_<vONNXEngine>(m, "vONNXEngine")
         .def(py::init([](const EngineConfig &c) {
+            auto config=c;
+            if(config.precision_python.empty()) config.precision_python=py::module_::import("sys").attr("executable").cast<std::string>();
+            if(config.precision_tool.empty()) config.precision_tool=py::module_::import("vonnx.precision").attr("__file__").cast<std::string>();
             py::gil_scoped_release release;
-            return std::make_unique<vONNXEngine>(c);
+            return std::make_unique<vONNXEngine>(config);
         }))
         .def("start", &vONNXEngine::start)
         .def("stop", &vONNXEngine::stop, py::call_guard<py::gil_scoped_release>())

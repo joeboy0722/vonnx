@@ -1,5 +1,22 @@
 #include "vonnx/cuda_preprocess.cuh"
+#include <cuda_fp16.h>
 namespace vonnx {
+__global__ void to_half_kernel(const float* source, __half* target, size_t n) {
+    size_t i=size_t(blockIdx.x)*blockDim.x+threadIdx.x;
+    if(i<n) target[i]=__float2half_rn(source[i]);
+}
+__global__ void from_half_kernel(const __half* source, float* target, size_t n) {
+    size_t i=size_t(blockIdx.x)*blockDim.x+threadIdx.x;
+    if(i<n) target[i]=__half2float(source[i]);
+}
+void launch_to_half(const float* source,uint16_t* target,size_t n,cudaStream_t stream) {
+    to_half_kernel<<<unsigned((n+255)/256),256,0,stream>>>(source,reinterpret_cast<__half*>(target),n);
+    CUDA_CHECK(cudaGetLastError());
+}
+void launch_from_half(const uint16_t* source,float* target,size_t n,cudaStream_t stream) {
+    from_half_kernel<<<unsigned((n+255)/256),256,0,stream>>>(reinterpret_cast<const __half*>(source),target,n);
+    CUDA_CHECK(cudaGetLastError());
+}
 __device__ int pixel(const PreprocessFrame &f, int x, int y, int c) {
     if (f.format == PixelFormat::NV12) {
         float yy = f.ptr[y * f.stride + x];

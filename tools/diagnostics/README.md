@@ -48,3 +48,13 @@ to SQLite. `analyze_stream_trace.py <trace.sqlite>` prints CUDA streams, APIs an
 Nsight Systems may require an ASCII working/output path on Windows; the repository itself supports Chinese paths.
 
 Historical measurements and limitations: [performance notes](../../docs/performance.md).
+
+## FP16 bounded report
+
+`python tools/diagnostics/fp16_report.py --input runs/fp16` combines preserved
+before/after/official short-test JSON into CSV, JSON and Markdown without GPU work.
+FP16 setup, correctness and short-test commands: [FP16 guide](../../docs/fp16.md).
+
+`python tools/diagnostics/ap_report.py` checks all three full s/640 FP16 AP records,
+current binary/converter fingerprints and the 0.5 percentage point decline gate,
+then exports the compact public `docs/ap_fp16.md` / JSON report without GPU work.

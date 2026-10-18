@@ -1,4 +1,5 @@
 #include "vonnx/vonnx_engine.hpp"
+#include "vonnx/model_precision.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -17,6 +18,7 @@ struct vONNXEngine::Slot {
     std::unique_ptr<NMSWorkspace> nms;
     DeviceBuffer<uint8_t> raw, mask_data;
     DeviceBuffer<float> input, prediction, prototype, pose;
+    DeviceBuffer<uint16_t> input16, prediction16, prototype16;
     DeviceBuffer<AffineMatrix> affine;
     DeviceBuffer<DeviceBBox> boxes;
     DeviceBuffer<int> counts;
@@ -35,12 +37,23 @@ struct vONNXEngine::Slot {
           masks_done(timing, seg), final_copy(timing, seg) {}
     size_t bytes() const {
         return raw.bytes() + mask_data.bytes() + input.bytes() + prediction.bytes() + prototype.bytes() +
-               pose.bytes() + affine.bytes() + boxes.bytes() + counts.bytes() + mask_plans.bytes() +
+               pose.bytes() + input16.bytes() + prediction16.bytes() + prototype16.bytes() +
+               affine.bytes() + boxes.bytes() + counts.bytes() + mask_plans.bytes() +
                preprocess->frames.bytes() + nms->scores.bytes() + nms->sorted_scores.bytes() +
                nms->indices.bytes() + nms->sorted_indices.bytes() + nms->scratch.bytes();
     }
 };
 vONNXEngine::vONNXEngine(const EngineConfig &config) : config_(config) {
+    if(config_.precision!="auto" && config_.precision!="fp32" && config_.precision!="fp16")
+        throw std::invalid_argument("precision must be auto, fp32 or fp16");
+    const auto source_precision=inspect_precision(config_.model_path);
+    if(config_.precision=="fp32" && source_precision!="fp32")
+        throw std::invalid_argument("FP16/mixed source cannot be requested as FP32; original precision cannot be restored");
+    const bool converted=config_.precision=="fp16" && source_precision!="fp16";
+    if(config_.batch_shape_policy!="auto" && config_.batch_shape_policy!="dynamic" && config_.batch_shape_policy!="fixed")
+        throw std::invalid_argument("batch_shape_policy must be auto, dynamic or fixed");
+    if(converted) config_.model_path=convert_precision(config_.model_path,config_.model_cache_dir,
+                                                     config_.precision_python,config_.precision_tool);
     if (config_.batch_mode != "throughput" && config_.batch_mode != "latency")
         throw std::invalid_argument("Invalid batch_mode");
     if (config_.max_latency_ms == -1)
@@ -68,8 +81,16 @@ vONNXEngine::vONNXEngine(const EngineConfig &config) : config_(config) {
     upload_stream_.create();
     download_stream_.create();
     runner_ = std::make_unique<ONNXRunner>(config_.model_path, config_.gpu_id, config_.input_width,
-                                           config_.input_height, int(config_.max_batch_size), stream_.get());
+                                           config_.input_height, int(config_.max_batch_size), stream_.get(),
+                                           config_.gpu_memory_budget_mb*1024*1024, converted || source_precision!="fp32");
     cached_spec_ = runner_->spec();
+    cached_spec_.source_precision=source_precision;
+    cached_spec_.effective_precision=converted?inspect_precision(config_.model_path):source_precision;
+    cached_spec_.converted=converted;
+    if(config_.batch_shape_policy=="fixed" || (config_.batch_shape_policy=="auto" &&
+       cached_spec_.effective_precision!="fp32" && config_.batch_mode=="throughput"))
+        cached_spec_.fixed_batch_size=int(config_.max_batch_size);
+    cached_spec_.prepared_model_path=config_.model_path;
     const auto &s = cached_spec_;
     const size_t b = config_.max_batch_size, budget = config_.gpu_memory_budget_mb * 1024 * 1024;
     page_size_ = size_t(config_.max_input_width) * config_.max_input_height * 4;
@@ -95,6 +116,8 @@ vONNXEngine::vONNXEngine(const EngineConfig &config) : config_(config) {
             p->legacy_upload.allocate(b * page_size_);
         p->input.allocate(b * 3 * s.width * s.height);
         p->prediction.allocate(b * s.channels * s.anchors);
+        if(s.input_dtype==10) p->input16.allocate(p->input.size());
+        if(s.output_dtypes[0]==10) p->prediction16.allocate(p->prediction.size());
         p->affine.allocate(b);
         p->boxes.allocate(b * MAX_BOXES_PER_IMAGE);
         p->counts.allocate(b);
@@ -106,6 +129,7 @@ vONNXEngine::vONNXEngine(const EngineConfig &config) : config_(config) {
         }
         if (s.task == "segment") {
             p->prototype.allocate(b * s.mask_channels * s.mask_height * s.mask_width);
+            if(s.output_dtypes[1]==10) p->prototype16.allocate(p->prototype.size());
             p->mask_data.allocate(config_.max_mask_bytes);
             p->mask_plans.allocate(b * MAX_BOXES_PER_IMAGE);
             p->host_masks.allocate(config_.max_mask_bytes);
@@ -123,11 +147,12 @@ vONNXEngine::vONNXEngine(const EngineConfig &config) : config_(config) {
     arena_limit_ = budget - reserved_bytes_ - 16 * 1024 * 1024;
     runner_->initialize_cuda(config_.gpu_id, stream_.get(), arena_limit_);
     for (auto &p : slots_) {
-        std::vector<float *> outputs{p->prediction.get()};
+        std::vector<void *> outputs{p->prediction16.get()?static_cast<void*>(p->prediction16.get()):p->prediction.get()};
         if (s.task == "segment")
-            outputs.push_back(p->prototype.get());
-        runner_->prepare_bindings(p->id, p->input.get(), outputs, int(b));
+            outputs.push_back(p->prototype16.get()?static_cast<void*>(p->prototype16.get()):p->prototype.get());
+        runner_->prepare_bindings(p->id, p->input16.get()?static_cast<void*>(p->input16.get()):p->input.get(), outputs, int(b));
         CUDA_CHECK(cudaMemsetAsync(p->input.get(), 0, p->input.bytes(), stream_.get()));
+        if(p->input16.get()) CUDA_CHECK(cudaMemsetAsync(p->input16.get(),0,p->input16.bytes(),stream_.get()));
     }
     size_t available{};
     CUDA_CHECK(cudaMemGetInfo(&available, &total));
@@ -425,7 +450,7 @@ void vONNXEngine::worker_loop() {
     try {
         CUDA_CHECK(cudaSetDevice(config_.gpu_id));
         for (auto &slot : slots_)
-            for (size_t batch = 1; batch <= config_.max_batch_size; ++batch) {
+            for (size_t batch = cached_spec_.fixed_batch_size?config_.max_batch_size:1; batch <= config_.max_batch_size; ++batch) {
                 runner_->run(slot->id, int(batch));
                 CUDA_CHECK(cudaStreamSynchronize(stream_.get()));
                 size_t available{}, total{};
@@ -495,6 +520,7 @@ void vONNXEngine::process_slot(Slot &slot) {
         r.stream_id = job.tasks[b].stream_id;
         r.frame_id = job.tasks[b].frame_id;
         r.batch_size = batch;
+        r.physical_batch_size=s.fixed_batch_size?s.fixed_batch_size:batch;
         r.queue_ms =
             std::chrono::duration<double, std::milli>(job.dispatched - job.requests[b]->submitted).count();
         r.batch_wait_ms = std::min(r.queue_ms, job.batch_wait_ms);
@@ -506,10 +532,16 @@ void vONNXEngine::process_slot(Slot &slot) {
     slot.compute_start.record(stream);
     launch_prepared_preprocess(batch, *slot.preprocess, slot.input.get(), slot.affine.get(), s.width,
                                s.height, stream);
+    const int physical=s.fixed_batch_size?s.fixed_batch_size:batch;
+    if(physical>batch) CUDA_CHECK(cudaMemsetAsync(slot.input.get()+size_t(batch)*3*s.width*s.height,0,
+        size_t(physical-batch)*3*s.width*s.height*sizeof(float),stream));
+    if(slot.input16.get()) launch_to_half(slot.input.get(),slot.input16.get(),size_t(physical)*3*s.width*s.height,stream);
     pre.record(stream);
     float *outputs[] = {slot.prediction.get(), slot.prototype.get()};
     size_t output_count = s.task == "segment" ? 2 : 1;
-    runner_->run(slot.id, batch);
+    runner_->run(slot.id, physical);
+    if(slot.prediction16.get()) launch_from_half(slot.prediction16.get(),slot.prediction.get(),size_t(batch)*s.channels*s.anchors,stream);
+    if(slot.prototype16.get()) launch_from_half(slot.prototype16.get(),slot.prototype.get(),size_t(batch)*s.mask_channels*s.mask_height*s.mask_width,stream);
     infer.record(stream);
     launch_batched_yolo_nms(slot.prediction.get(), slot.affine.get(), batch, s.classes, s.channels, s.anchors,
                             config_.conf_threshold, config_.iou_threshold, config_.max_det, *slot.nms,
